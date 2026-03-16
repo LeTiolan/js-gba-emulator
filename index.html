@@ -5,108 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quartz GBA</title>
     <style>
-        /* Quartz Block Theme */
+        /* Light Theme (Quartz) */
         :root {
             --bg-color: #f0f2f5;
-            --quartz-glass: rgba(255, 255, 255, 0.65);
-            --quartz-border: rgba(255, 255, 255, 0.9);
+            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            --glass: rgba(255, 255, 255, 0.65);
+            --border: rgba(255, 255, 255, 0.9);
             --text-main: #2d2d3a;
             --text-muted: #717182;
             --accent: #8b9bb4;
+            --play-btn: #b5e4ca; /* Soft pastel green */
             --shadow: 0 8px 32px rgba(130, 140, 170, 0.15);
+        }
+
+        /* Dark Theme overrides */
+        body.dark-mode {
+            --bg-color: #0d0d12;
+            --bg-gradient: linear-gradient(135deg, #121218 0%, #0a0a0f 100%);
+            --glass: rgba(20, 20, 25, 0.75);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f1f1;
+            --text-muted: #888899;
+            --accent: #7a7aff;
+            --play-btn: #6fc28e;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color); color: var(--text-main);
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden; touch-action: none;
-            background-image: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            background-color: var(--bg-color); background-image: var(--bg-gradient); 
+            color: var(--text-main); font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; touch-action: none; transition: background 0.3s;
         }
 
-        /* Screen Wrapper */
         #emulator-container {
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             width: 100vw; height: 100vh; position: relative;
         }
+        
         canvas {
             background-color: #000; image-rendering: pixelated;
             width: 100%; max-width: 100vmin; aspect-ratio: 3 / 2;
             box-shadow: 0 20px 60px rgba(0,0,0,0.15); border-radius: 6px;
-            z-index: 10; border: 4px solid var(--quartz-border);
+            z-index: 10; border: 4px solid var(--border); transition: border 0.3s;
         }
 
-        /* Quartz Hamburger Menu */
+        /* The Overlay Play Button */
+        #play-overlay {
+            position: absolute; display: none; flex-direction: column; align-items: center; z-index: 20;
+        }
+        #play-overlay.active { display: flex; }
+        .play-btn {
+            background: var(--play-btn); color: #111; font-weight: bold; font-size: 16px;
+            border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; margin-top: 15px;
+        }
+        .play-btn:hover { transform: scale(1.05); }
+
+        /* Menus and UI */
         #menu-btn {
-            position: absolute; top: 20px; left: 25px;
-            background: var(--quartz-glass); border: 1px solid var(--quartz-border);
-            color: var(--text-main); font-size: 24px; cursor: pointer;
-            z-index: 100; padding: 6px 12px; border-radius: 8px;
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            box-shadow: var(--shadow); transition: 0.2s;
+            position: absolute; top: 20px; left: 25px; background: var(--glass); border: 1px solid var(--border);
+            color: var(--text-main); font-size: 24px; cursor: pointer; z-index: 100; padding: 6px 12px; 
+            border-radius: 8px; backdrop-filter: blur(10px); box-shadow: var(--shadow);
         }
-        #menu-btn:hover { background: rgba(255,255,255,0.9); }
-
-        /* Slide-out Quartz Panel */
         #menu-panel {
             position: absolute; top: 0; left: -320px; width: 300px; height: 100%;
-            background: var(--quartz-glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: var(--glass); backdrop-filter: blur(20px);
             display: flex; flex-direction: column; padding: 90px 25px 25px; box-sizing: border-box;
-            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 50;
-            border-right: 1px solid var(--quartz-border); box-shadow: var(--shadow);
+            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 50; border-right: 1px solid var(--border);
         }
         #menu-panel.open { left: 0; }
         
         .menu-item {
-            background: rgba(255,255,255,0.5); color: var(--text-main);
-            border: 1px solid var(--quartz-border); padding: 14px 18px; margin-bottom: 12px;
-            font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 10px;
-            text-align: left; transition: all 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            background: rgba(150,150,150,0.1); color: var(--text-main); border: 1px solid var(--border); 
+            padding: 14px 18px; margin-bottom: 12px; font-size: 14px; font-weight: 600; cursor: pointer; 
+            border-radius: 10px; text-align: left; transition: all 0.2s;
         }
-        .menu-item:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .menu-item:hover { background: rgba(150,150,150,0.2); transform: translateY(-2px); }
         #romLoader { display: none; }
 
-        /* Quartz Modal Overlay */
-        #modal-overlay {
+        /* Modals */
+        .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(240, 242, 245, 0.6); backdrop-filter: blur(8px);
+            background: rgba(0,0,0, 0.4); backdrop-filter: blur(8px);
             display: none; justify-content: center; align-items: center; z-index: 200;
         }
-        #modal-overlay.active { display: flex; }
+        .modal-overlay.active { display: flex; }
         .modal-content {
-            background: var(--quartz-glass); padding: 35px; border-radius: 16px;
-            width: 320px; text-align: center; border: 1px solid var(--quartz-border);
-            box-shadow: var(--shadow); backdrop-filter: blur(20px);
+            background: var(--glass); padding: 30px; border-radius: 16px; width: 350px; 
+            border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px);
+            max-height: 80vh; overflow-y: auto;
         }
-        .key-row { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; font-weight: 500; }
-        .key-btn { 
-            background: #fff; border: 1px solid #ddd; color: var(--text-main);
-            padding: 8px 12px; border-radius: 8px; cursor: pointer; width: 110px; font-weight: 600;
-        }
-        .key-btn.listening { background: var(--accent); color: white; border-color: var(--accent); }
-        .close-btn { 
-            margin-top: 25px; background: var(--text-main); color: white; border: none; 
-            padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; 
-        }
-
-        /* Mobile Touch Controls */
-        #touch-controls {
-            position: absolute; bottom: 8%; width: 100%; max-width: 800px;
-            display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 30;
-        }
-        #touch-controls.active { display: flex; }
-        .dpad, .action-btns { display: grid; gap: 8px; opacity: 0.6; }
-        .dpad { grid-template-columns: 55px 55px 55px; grid-template-rows: 55px 55px 55px; }
-        .action-btns { grid-template-columns: 65px 65px; align-items: end; padding-bottom: 25px;}
-        .t-btn { 
-            background: var(--quartz-glass); border: 1px solid var(--quartz-border); 
-            border-radius: 50%; width: 100%; height: 100%; backdrop-filter: blur(5px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: var(--text-main); font-weight: bold;
-            display: flex; justify-content: center; align-items: center; user-select: none;
-        }
-        .t-btn:active { background: #fff; transform: scale(0.95); }
-        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+        .key-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; font-size: 13px;}
+        .key-btn { background: var(--bg-color); border: 1px solid var(--border); color: var(--text-main); padding: 6px 10px; border-radius: 6px; cursor: pointer; width: 80px; font-weight: bold; }
+        .key-btn.listening { background: var(--accent); color: white; }
+        .action-row { display: flex; gap: 10px; margin-top: 20px; }
+        .primary-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
+        .danger-btn { background: #d9534f; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
     </style>
 </head>
 <body>
@@ -114,38 +109,43 @@
     <button id="menu-btn">☰</button>
 
     <div id="menu-panel">
-        <h2 style="margin-top: 0; font-size: 12px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;">System Options</h2>
+        <h2 style="margin-top: 0; font-size: 12px; color: var(--text-muted); letter-spacing: 2px;">System Options</h2>
         <button class="menu-item" id="btn-load">📁 Load Cartridge</button>
-        <button class="menu-item" id="btn-keybinds">⌨️ Input Settings</button>
-        <button class="menu-item" id="btn-touch">📱 Toggle Mobile UI</button>
-        <button class="menu-item" id="btn-fullscreen">🔲 Fullscreen</button>
+        <button class="menu-item" id="btn-library">📚 Game Library</button>
+        <button class="menu-item" id="btn-keybinds">🎮 Input Settings</button>
+        <button class="menu-item" id="btn-theme">🌙 Toggle Dark Mode</button>
         <input type="file" id="romLoader" accept=".gba">
     </div>
 
-    <div id="modal-overlay">
+    <div id="play-overlay">
+        <div style="font-weight: bold; letter-spacing: 1px;">Cartridge entered</div>
+        <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
+    </div>
+
+    <div class="modal-overlay" id="modal-inputs">
         <div class="modal-content">
             <h3 style="margin-top: 0;">Map Controls</h3>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Click a button, then press a key. Gamepads are auto-detected.</p>
+            <h4 style="margin-bottom: 5px; border-bottom: 1px solid var(--border);">Keyboard</h4>
             <div id="key-list"></div>
-            <button class="close-btn" id="btn-close-modal">Save & Close</button>
+            <h4 style="margin-bottom: 5px; margin-top: 15px; border-bottom: 1px solid var(--border);">Controller (Buttons 0-15)</h4>
+            <div id="pad-list"></div>
+            <div class="action-row">
+                <button class="danger-btn" id="btn-reset-keys">Reset</button>
+                <button class="primary-btn" id="btn-close-keys">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-library">
+        <div class="modal-content">
+            <h3 style="margin-top: 0;">My Games</h3>
+            <div id="library-list" style="margin-bottom: 20px; font-size: 14px;">No games saved yet.</div>
+            <button class="primary-btn" id="btn-close-library" style="width: 100%;">Close</button>
         </div>
     </div>
 
     <div id="emulator-container">
         <canvas id="screen" width="240" height="160"></canvas>
-        
-        <div id="touch-controls">
-            <div class="dpad">
-                <div class="t-btn up" data-key="Up"></div>
-                <div class="t-btn left" data-key="Left"></div>
-                <div class="t-btn right" data-key="Right"></div>
-                <div class="t-btn down" data-key="Down"></div>
-            </div>
-            <div class="action-btns">
-                <div class="t-btn b-btn" data-key="B" style="margin-bottom: -25px;">B</div>
-                <div class="t-btn a-btn" data-key="A">A</div>
-            </div>
-        </div>
     </div>
 
     <script src="emulator.js"></script>
