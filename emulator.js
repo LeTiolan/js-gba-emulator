@@ -416,3 +416,119 @@ document.getElementById('btn-reset-keys').addEventListener('click', () => {
 
 // Render the UI once on boot so it's ready when the modal opens
 renderKeyMapUI();
+/* =========================================================
+   SECTION 4: ENGINE WRAPPER & CORE BOOT SEQUENCE
+   ========================================================= */
+
+// 4.1 - The Engine State Manager
+const GBA_Engine = {
+    isRunning: false,
+    audioContext: null,
+    animationFrameId: null,
+    core: null, // This will eventually hold our WASM/JS CPU core
+    
+    // 4.2 - Initialize Audio & Video Systems
+    init: function() {
+        console.log("[Engine] Initializing Hardware Subsystems...");
+        
+        // Boot Web Audio API (Must happen after user clicks 'PRESS PLAY')
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.audioContext = new AudioContext();
+            console.log(`[Engine] AudioContext booted. Sample Rate: ${this.audioContext.sampleRate}Hz`);
+        } catch (e) {
+            console.error("[Engine] Web Audio API not supported in this browser.", e);
+        }
+
+        // Setup Canvas Context (Preparing for WebGL or 2D rendering)
+        const canvas = document.getElementById('screen');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (gl) {
+            console.log("[Engine] WebGL Hardware Acceleration Active.");
+            // WebGL setup logic will expand here in the Video module
+        } else {
+            console.log("[Engine] WebGL unavailable. Falling back to 2D Canvas.");
+            this.ctx = canvas.getContext('2d');
+        }
+    },
+
+    // 4.3 - Load the Binary ROM
+    loadRom: function(file) {
+        console.log(`[Engine] Reading binary payload: ${file.name}`);
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const romBuffer = new Uint8Array(e.target.result);
+            console.log(`[Engine] ROM loaded into memory. Size: ${romBuffer.length} bytes`);
+            
+            // This is where we will pass 'romBuffer' into the WASM core module
+            // e.g., this.core.loadROM(romBuffer);
+            
+            this.start();
+        };
+        reader.readAsArrayBuffer(file);
+    },
+
+    // 4.4 - The 60FPS Main Loop
+    start: function() {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        console.log("[Engine] Boot sequence complete. Executing CPU clock.");
+
+        // Resume audio context if browser suspended it
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+
+        // Hide the Quartz OS "INSERT CARTRIDGE" text, prepare for video output
+        document.getElementById('screen').style.background = '#000';
+
+        let lastTime = performance.now();
+        
+        const loop = (currentTime) => {
+            if (!this.isRunning) return;
+
+            // Calculate Delta Time to lock at 60 FPS (approx 16.6ms per frame)
+            const deltaTime = currentTime - lastTime;
+            
+            if (deltaTime >= 16.6) {
+                // 1. Poll Inputs: Feed our inputState object into the CPU
+                // this.core.setInputs(inputState);
+                
+                // 2. Step CPU: Tell the core to run one frame's worth of cycles
+                // this.core.stepFrame();
+                
+                // 3. Render Video: Pull the frame buffer and paint it to canvas
+                // this.renderFrame();
+                
+                lastTime = currentTime;
+            }
+
+            this.animationFrameId = requestAnimationFrame(loop);
+        };
+
+        this.animationFrameId = requestAnimationFrame(loop);
+    },
+
+    pause: function() {
+        this.isRunning = false;
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+        if (this.audioContext) {
+            this.audioContext.suspend();
+        }
+        console.log("[Engine] Emulation paused.");
+    }
+};
+
+// 4.5 - Connect the "PRESS PLAY" Button to the Engine
+document.getElementById('btn-start-game').addEventListener('click', () => {
+    // pendingRomFile comes from Section 1/2
+    if (pendingRomFile) {
+        GBA_Engine.init();
+        GBA_Engine.loadRom(pendingRomFile);
+    } else {
+        console.error("[Engine] Boot failed: No cartridge inserted.");
+    }
+});
