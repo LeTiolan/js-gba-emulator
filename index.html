@@ -182,77 +182,82 @@
         <div class="modal-content">
             <h3 style="margin-top: 0; text-align: center; font-weight: 900; letter-spacing: 1px;">CONTROLS</h3>
             
-            <svg viewBox="0 0 800 360" style="width:100%; height:auto; background:transparent; font-family:'Segoe UI', sans-serif; margin-bottom: 20px;">
+            <div style="position: relative; width: 100%; max-width: 800px; margin: 0 auto 20px auto;">
                 
-                <image href="https://upload.wikimedia.org/wikipedia/commons/4/43/Xbox-console-controller.svg" x="250" y="80" width="300" height="250" opacity="0.6" />
-                
-                <polyline points="240,40 370,40 370,180" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="370" cy="180" r="4" fill="var(--text-main)"/>
-                <rect x="110" y="28" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="175" y="44" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">VIEW [8]</text>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Xbox-console-controller.svg/600px-Xbox-console-controller.svg.png" 
+                     style="position: absolute; top: 60px; left: 50%; transform: translateX(-50%); width: 300px; opacity: 0.4; pointer-events: none;" 
+                     alt="Controller Graphic">
 
-                <polyline points="240,80 260,80 310,120" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="310" cy="120" r="4" fill="var(--text-main)"/>
-                <rect x="110" y="68" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="175" y="84" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">LT [6]</text>
+                <svg viewBox="0 0 800 360" style="position: relative; width: 100%; height: auto; background: transparent; font-family: 'Segoe UI', sans-serif; z-index: 2;">
+                    
+                    <polyline points="240,40 370,40 370,165" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="370" cy="165" r="4" fill="var(--text-main)"/>
+                    <rect x="110" y="28" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="175" y="44" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">VIEW [8]</text>
 
-                <polyline points="240,120 260,120 310,140" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="310" cy="140" r="4" fill="var(--text-main)"/>
-                <rect x="110" y="108" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="175" y="124" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">LB [4]</text>
+                    <polyline points="240,80 260,80 310,105" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="310" cy="105" r="4" fill="var(--text-main)"/>
+                    <rect x="110" y="68" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="175" y="84" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">LT [6]</text>
 
-                <polyline points="240,200 260,200 315,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="315" cy="185" r="4" fill="var(--text-main)"/>
-                <rect x="110" y="188" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="175" y="204" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">L-STICK [10]</text>
+                    <polyline points="240,120 260,120 310,125" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="310" cy="125" r="4" fill="var(--text-main)"/>
+                    <rect x="110" y="108" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="175" y="124" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">LB [4]</text>
 
-                <polyline points="240,280 260,280 345,235" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="345" cy="235" r="4" fill="var(--text-main)"/>
-                <rect x="110" y="268" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="175" y="284" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">D-PAD [12-15]</text>
+                    <polyline points="240,200 260,200 315,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="315" cy="185" r="4" fill="var(--text-main)"/>
+                    <rect x="110" y="188" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="175" y="204" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">L-STICK [10]</text>
+
+                    <polyline points="240,280 260,280 345,235" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="345" cy="235" r="4" fill="var(--text-main)"/>
+                    <rect x="110" y="268" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="175" y="284" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">D-PAD [12-15]</text>
 
 
-                <polyline points="560,40 430,40 430,180" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="430" cy="180" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="28" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="44" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">MENU [9]</text>
+                    <polyline points="560,40 430,40 430,165" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="430" cy="165" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="28" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="44" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">MENU [9]</text>
 
-                <polyline points="560,80 540,80 490,120" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="490" cy="120" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="68" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="84" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">RT [7]</text>
+                    <polyline points="560,80 540,80 490,105" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="490" cy="105" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="68" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="84" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">RT [7]</text>
 
-                <polyline points="560,120 540,120 490,140" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="490" cy="140" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="108" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="124" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">RB [5]</text>
+                    <polyline points="560,120 540,120 490,125" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="490" cy="125" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="108" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="124" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">RB [5]</text>
 
-                <polyline points="560,160 540,160 490,170" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="490" cy="170" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="148" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="164" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">Y [3]</text>
+                    <polyline points="560,160 540,160 490,155" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="490" cy="155" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="148" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="164" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">Y [3]</text>
 
-                <polyline points="560,200 540,200 505,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="505" cy="185" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="188" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="204" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">B [1]</text>
+                    <polyline points="560,200 540,200 505,170" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="505" cy="170" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="188" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="204" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">B [1]</text>
 
-                <polyline points="560,240 540,240 490,200" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="490" cy="200" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="228" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="244" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">A [0]</text>
+                    <polyline points="560,240 540,240 490,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="490" cy="185" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="228" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="244" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">A [0]</text>
 
-                <polyline points="560,280 540,280 475,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="475" cy="185" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="268" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="284" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">X [2]</text>
+                    <polyline points="560,280 540,280 475,170" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="475" cy="170" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="268" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="284" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">X [2]</text>
 
-                <polyline points="560,320 540,320 455,235" fill="none" stroke="var(--text-main)" stroke-width="2"/>
-                <circle cx="455" cy="235" r="4" fill="var(--text-main)"/>
-                <rect x="560" y="308" width="130" height="24" rx="12" fill="var(--text-main)"/>
-                <text x="625" y="324" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">R-STICK [11]</text>
+                    <polyline points="560,320 540,320 455,235" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                    <circle cx="455" cy="235" r="4" fill="var(--text-main)"/>
+                    <rect x="560" y="308" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                    <text x="625" y="324" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">R-STICK [11]</text>
 
-            </svg>
+                </svg>
+            </div>
 
             <div style="display: flex; gap: 40px;">
                 <div style="flex: 1;">
