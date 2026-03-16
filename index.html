@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS GBA Emulator</title>
+    <style>
+        body { background-color: #222; color: white; text-align: center; font-family: sans-serif; }
+        /* The GBA screen is exactly 240x160 pixels */
+        canvas { background-color: #000; image-rendering: pixelated; width: 480px; height: 320px; border: 2px solid #555;}
+    </style>
+</head>
+<body>
+    <h2>Minimal GBA Emulator</h2>
+    <canvas id="screen" width="240" height="160"></canvas>
+    <br><br>
+    <input type="file" id="romLoader" accept=".gba">
+    
+    <script src="emulator.js"></script>
+</body>
+</html>
