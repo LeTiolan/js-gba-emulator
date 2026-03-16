@@ -94,36 +94,79 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
 document.getElementById('btn-load').addEventListener('click', () => { romLoader.click(); menuPanel.classList.remove('open'); });
 
 
-// --- Canvas Idle Animation ---
-let emulationRunning = false;
+// --- Screen Rendering & Boot Sequence ---
+let emulatorState = 'IDLE'; // States: 'IDLE', 'BOOTING', 'RUNNING'
+let bootProgress = 0;
 
-function drawIdleScreen() {
-    if (emulationRunning) return; // Stop animation if game is loaded
+function renderLoop() {
+    // 1. THE IDLE SCREEN
+    if (emulatorState === 'IDLE') {
+        const time = Date.now() / 1000;
+        
+        // Create a shifting, colorful gradient background
+        let gradient = ctx.createLinearGradient(0, 0, 240, 160);
+        gradient.addColorStop(0, `hsl(${(time * 40) % 360}, 60%, 20%)`);
+        gradient.addColorStop(1, `hsl(${((time * 40) + 180) % 360}, 60%, 10%)`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 240, 160);
+
+        // Draw pulsing text
+        const alpha = (Math.sin(time * 3) + 1) / 2 * 0.7 + 0.3; // Pulses opacity
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.font = 'bold 14px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('AWAITING CARTRIDGE', 120, 85);
+        
+        // Draw a sleek border
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 10, 220, 140);
+    } 
     
-    // Clear screen to GBA dark grey
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, 240, 160);
+    // 2. THE BOOT ANIMATION
+    else if (emulatorState === 'BOOTING') {
+        bootProgress += 0.015; // Controls the speed of the animation
+        
+        if (bootProgress < 1.0) {
+            // White screen flash
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 240, 160);
+            
+            // Logo dropping down from the top
+            ctx.fillStyle = '#222';
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            
+            // Math to make it drop and stop at the center (y = 85)
+            let yPos = Math.min(85, -20 + (bootProgress * 100) * 1.5);
+            ctx.fillText('SYSTEM BOOT', 120, yPos);
+            
+        } else if (bootProgress < 2.0) {
+            // Smooth fade to black
+            let fadeAlpha = bootProgress - 1.0;
+            ctx.fillStyle = `rgba(0, 0, 0, ${fadeAlpha})`;
+            ctx.fillRect(0, 0, 240, 160);
+            
+        } else {
+            // Animation finished! Hand over to the actual emulator.
+            emulatorState = 'RUNNING';
+            console.log("Boot sequence complete. Handing over to CPU...");
+            startEmulatorCore();
+            return; // Exit this specific loop
+        }
+    }
 
-    // Pulsing Text Logic
-    const time = Date.now() / 500;
-    const alpha = (Math.sin(time) + 1) / 2 * 0.8 + 0.2; // Pulses between 0.2 and 1.0
-
-    ctx.fillStyle = `rgba(122, 122, 255, ${alpha})`;
-    ctx.font = '12px Courier New';
-    ctx.textAlign = 'center';
-    ctx.fillText('NO CARTRIDGE INSERTED', 120, 80);
-    
-    // Draw GBA aspect ratio borders
-    ctx.strokeStyle = '#333';
-    ctx.strokeRect(10, 10, 220, 140);
-
-    requestAnimationFrame(drawIdleScreen);
+    // Keep the animation looping at 60FPS unless the game is running
+    if (emulatorState !== 'RUNNING') {
+        requestAnimationFrame(renderLoop);
+    }
 }
-// Start idle animation immediately on page load
-drawIdleScreen();
+
+// Start the visuals immediately on page load
+renderLoop();
 
 
-// --- Rom Loading ---
+// --- Rom Loading Logic ---
 let romMemory = null;
 
 romLoader.addEventListener('change', function(event) {
@@ -133,20 +176,32 @@ romLoader.addEventListener('change', function(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         romMemory = new Uint8Array(e.target.result);
-        emulationRunning = true; // Stops the idle screen
-        
         console.log(`ROM Loaded: ${romMemory.length} bytes`);
-        startEmulation();
+        
+        // Trigger the visual boot sequence!
+        emulatorState = 'BOOTING'; 
+        bootProgress = 0; 
     };
     reader.readAsArrayBuffer(file);
 });
 
-function startEmulation() {
-    // Clear screen for game boot
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, 240, 160);
-    ctx.fillStyle = '#fff';
-    ctx.fillText('BOOTING...', 120, 80);
-    
-    // CPU Loop will go here
+
+// --- The Actual Game Core ---
+function startEmulatorCore() {
+    // For now, since we haven't written the CPU, we will just draw 
+    // some cool static "Matrix" rain or noise to show it successfully transitioned.
+    setInterval(() => {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 240, 160);
+        
+        for(let i = 0; i < 400; i++) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#fff' : '#444';
+            ctx.fillRect(Math.random() * 240, Math.random() * 160, 2, 2);
+        }
+        
+        ctx.fillStyle = '#0f0'; // Hacker green
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('CPU CORE ACTIVE...', 120, 80);
+    }, 1000 / 60); // 60 FPS
 }
