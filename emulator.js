@@ -1,55 +1,129 @@
-// --- UI Elements ---
+// --- Core Elements ---
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
 const menuBtn = document.getElementById('menu-btn');
 const menuPanel = document.getElementById('menu-panel');
-const btnLoad = document.getElementById('btn-load');
-const btnFullscreen = document.getElementById('btn-fullscreen');
-const btnKeybinds = document.getElementById('btn-keybinds');
 const romLoader = document.getElementById('romLoader');
 
-// --- UI Logic ---
+// --- Input Management (Keyboard, Gamepad, Touch) ---
+let keyMap = {
+    'Up': 'ArrowUp', 'Down': 'ArrowDown', 'Left': 'ArrowLeft', 'Right': 'ArrowRight',
+    'A': 'x', 'B': 'z', 'Start': 'Enter', 'Select': 'Shift'
+};
+let inputState = { Up: 0, Down: 0, Left: 0, Right: 0, A: 0, B: 0, Start: 0, Select: 0 };
 
-// Toggle Menu Open/Close
-menuBtn.addEventListener('click', (e) => {
-    e.stopPropagation(); // Prevent the click from immediately closing it
-    menuPanel.classList.toggle('open');
-});
+// Listen for Keyboard
+window.addEventListener('keydown', (e) => handleKey(e.key, 1));
+window.addEventListener('keyup', (e) => handleKey(e.key, 0));
 
-// Click anywhere outside the menu to close it
-document.addEventListener('click', (e) => {
-    if (!menuPanel.contains(e.target) && menuPanel.classList.contains('open')) {
-        menuPanel.classList.remove('open');
+function handleKey(key, isPressed) {
+    for (const [gbaBtn, mappedKey] of Object.entries(keyMap)) {
+        if (key.toLowerCase() === mappedKey.toLowerCase()) {
+            inputState[gbaBtn] = isPressed;
+        }
     }
+}
+
+// Check for Gamepad (Polled during emulation loop)
+function pollGamepad() {
+    const gamepads = navigator.getGamepads();
+    if (!gamepads[0]) return;
+    const gp = gamepads[0];
+    // Simple mapping: A=Btn0, B=Btn1, Dpad=Axes
+    inputState['A'] = gp.buttons[0].pressed ? 1 : 0;
+    inputState['B'] = gp.buttons[1].pressed ? 1 : 0;
+    inputState['Left'] = gp.axes[0] < -0.5 ? 1 : 0;
+    inputState['Right'] = gp.axes[0] > 0.5 ? 1 : 0;
+}
+
+// --- Keybind UI Logic ---
+const modal = document.getElementById('modal-overlay');
+const keyList = document.getElementById('key-list');
+let listeningForKey = null;
+
+document.getElementById('btn-keybinds').addEventListener('click', () => {
+    menuPanel.classList.remove('open');
+    renderKeybinds();
+    modal.classList.add('active');
 });
 
-// Fullscreen API Handling
-btnFullscreen.addEventListener('click', () => {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.warn(`Error enabling fullscreen: ${err.message}`);
+document.getElementById('btn-close-modal').addEventListener('click', () => {
+    modal.classList.remove('active');
+    listeningForKey = null;
+});
+
+function renderKeybinds() {
+    keyList.innerHTML = '';
+    for (const [gbaBtn, mappedKey] of Object.entries(keyMap)) {
+        const row = document.createElement('div');
+        row.className = 'key-row';
+        row.innerHTML = `<span>${gbaBtn}</span> <button class="key-btn" id="map-${gbaBtn}">${mappedKey}</button>`;
+        keyList.appendChild(row);
+
+        // Click to rebind
+        document.getElementById(`map-${gbaBtn}`).addEventListener('click', function() {
+            if (listeningForKey) document.getElementById(`map-${listeningForKey}`).classList.remove('listening');
+            listeningForKey = gbaBtn;
+            this.innerText = "Press Key...";
+            this.classList.add('listening');
         });
-    } else {
-        document.exitFullscreen();
     }
-    menuPanel.classList.remove('open'); // Close menu after clicking
+}
+
+// Capture new keybind
+window.addEventListener('keydown', (e) => {
+    if (listeningForKey) {
+        keyMap[listeningForKey] = e.key;
+        listeningForKey = null;
+        renderKeybinds();
+    }
 });
 
-// Keybinds Button Placeholder
-btnKeybinds.addEventListener('click', () => {
-    alert("Keybind menu coming next!\n\nDefault will be mapped as:\nArrows = D-Pad\nZ = B button\nX = A button\nEnter = Start\nShift = Select");
+// --- UI Toggles ---
+document.getElementById('btn-touch').addEventListener('click', () => {
+    document.getElementById('touch-controls').classList.toggle('active');
     menuPanel.classList.remove('open');
 });
 
-// When "Load Game" is clicked, trigger the hidden file input
-btnLoad.addEventListener('click', () => {
-    romLoader.click();
+menuBtn.addEventListener('click', (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); });
+document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
     menuPanel.classList.remove('open');
 });
+document.getElementById('btn-load').addEventListener('click', () => { romLoader.click(); menuPanel.classList.remove('open'); });
 
 
-// --- Emulation Core Logic ---
+// --- Canvas Idle Animation ---
+let emulationRunning = false;
 
+function drawIdleScreen() {
+    if (emulationRunning) return; // Stop animation if game is loaded
+    
+    // Clear screen to GBA dark grey
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, 240, 160);
+
+    // Pulsing Text Logic
+    const time = Date.now() / 500;
+    const alpha = (Math.sin(time) + 1) / 2 * 0.8 + 0.2; // Pulses between 0.2 and 1.0
+
+    ctx.fillStyle = `rgba(122, 122, 255, ${alpha})`;
+    ctx.font = '12px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('NO CARTRIDGE INSERTED', 120, 80);
+    
+    // Draw GBA aspect ratio borders
+    ctx.strokeStyle = '#333';
+    ctx.strokeRect(10, 10, 220, 140);
+
+    requestAnimationFrame(drawIdleScreen);
+}
+// Start idle animation immediately on page load
+drawIdleScreen();
+
+
+// --- Rom Loading ---
 let romMemory = null;
 
 romLoader.addEventListener('change', function(event) {
@@ -58,16 +132,21 @@ romLoader.addEventListener('change', function(event) {
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        const arrayBuffer = e.target.result;
-        romMemory = new Uint8Array(arrayBuffer);
+        romMemory = new Uint8Array(e.target.result);
+        emulationRunning = true; // Stops the idle screen
         
-        console.log(`ROM loaded! Size: ${romMemory.length} bytes`);
+        console.log(`ROM Loaded: ${romMemory.length} bytes`);
         startEmulation();
     };
     reader.readAsArrayBuffer(file);
 });
 
 function startEmulation() {
-    console.log("System booting...");
-    // Future CPU loop goes here
+    // Clear screen for game boot
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, 240, 160);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('BOOTING...', 120, 80);
+    
+    // CPU Loop will go here
 }
