@@ -1,0 +1,378 @@
+/* =========================================================
+   QUARTZ GBA - SYSTEM STYLES (style.css)
+   ========================================================= */
+
+/* --- Centralized Design Variables --- */
+:root {
+    /* Light Theme (Quartz Default) */
+    --bg-color: #f0f2f5;
+    --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.9);
+    --text-main: #111118;
+    --text-muted: #717182;
+    --accent: #8b9bb4;
+    --play-btn: #b5e4ca;
+    --shadow: 0 8px 32px rgba(130, 140, 170, 0.15);
+    --danger: #d9534f;
+    --primary: #111118;
+    --primary-text: #f0f2f5;
+}
+
+body.dark-mode {
+    /* Dark Theme Overrides */
+    --bg-color: #0d0d12;
+    --bg-gradient: linear-gradient(135deg, #121218 0%, #0a0a0f 100%);
+    --glass-bg: rgba(20, 20, 25, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --text-main: #fcfcfc;
+    --text-muted: #888899;
+    --accent: #7a7aff;
+    --play-btn: #6fc28e;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --primary: #fcfcfc;
+    --primary-text: #0d0d12;
+}
+
+/* --- Global Resets & Typography --- */
+body, html {
+    margin: 0; 
+    padding: 0; 
+    width: 100%; 
+    height: 100%;
+    background-color: var(--bg-color); 
+    background-image: var(--bg-gradient); 
+    color: var(--text-main); 
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden; 
+    touch-action: none; /* Prevents mobile pull-to-refresh */
+    transition: background-color 0.4s, background-image 0.4s;
+}
+
+/* --- LAYER 1: Overlays & Globals --- */
+#theme-fade-overlay {
+    position: fixed; 
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: #000; 
+    z-index: 9999; 
+    opacity: 0; 
+    pointer-events: none;
+    transition: opacity 0.4s ease-in-out;
+}
+
+#fps-counter {
+    position: absolute;
+    top: 15px; right: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #00ff00;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* --- LAYER 2: Main Navigation & Menu --- */
+#menu-btn {
+    position: absolute; 
+    top: 20px; left: 25px; 
+    background: var(--glass-bg); 
+    border: 1px solid var(--glass-border);
+    color: var(--text-main); 
+    font-size: 24px; 
+    cursor: pointer; 
+    z-index: 100; 
+    padding: 6px 12px; 
+    border-radius: 8px; 
+    backdrop-filter: blur(10px); 
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, background 0.2s;
+}
+
+#menu-btn:hover {
+    transform: scale(1.05);
+}
+
+#menu-panel {
+    position: absolute; 
+    top: 0; left: -340px; 
+    width: 320px; height: 100%;
+    background: var(--glass-bg); 
+    backdrop-filter: blur(20px);
+    display: flex; flex-direction: column; 
+    padding: 90px 25px 25px; 
+    box-sizing: border-box;
+    transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
+    z-index: 50; 
+    border-right: 1px solid var(--glass-border);
+    overflow-y: auto;
+}
+
+#menu-panel.open { 
+    left: 0; 
+}
+
+#menu-panel h2 {
+    margin-top: 0; 
+    font-size: 12px; 
+    color: var(--text-muted); 
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.menu-item {
+    background: rgba(150,150,150,0.1); 
+    color: var(--text-main); 
+    border: 1px solid var(--glass-border); 
+    padding: 14px 18px; 
+    margin-bottom: 12px; 
+    font-size: 14px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    border-radius: 10px; 
+    text-align: left; 
+    transition: all 0.2s;
+}
+
+.menu-item:hover { 
+    background: rgba(150,150,150,0.2); 
+    transform: translateY(-2px); 
+}
+
+.toggle-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    cursor: default; 
+}
+
+.toggle-row:hover { 
+    transform: none; 
+}
+
+select {
+    background: var(--bg-color);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 4px;
+}
+
+input[type=range] {
+    width: 100px;
+}
+
+/* iOS Style Toggle Switch */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--text-muted); transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--play-btn); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Buttons */
+.action-row { display: flex; gap: 10px; }
+.primary-btn { background: var(--primary); color: var(--primary-text); border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
+.danger-btn { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
+.primary-btn:hover, .danger-btn:hover { opacity: 0.8; }
+
+/* --- LAYER 3: Modals --- */
+.modal-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0, 0.4); 
+    backdrop-filter: blur(8px);
+    display: none; /* Hidden by default */
+    justify-content: center; align-items: center; 
+    z-index: 200;
+}
+
+.modal-overlay.active { 
+    display: flex; 
+}
+
+.modal-content {
+    background: var(--glass-bg); 
+    padding: 30px; 
+    border-radius: 16px; 
+    width: 650px; 
+    max-width: 95vw;
+    border: 1px solid var(--glass-border); 
+    box-shadow: var(--shadow); 
+    backdrop-filter: blur(20px);
+    max-height: 85vh; 
+    overflow-y: auto;
+}
+
+.modal-content h3 {
+    text-align: center;
+    margin-top: 0;
+}
+
+textarea {
+    background: rgba(0,0,0,0.1);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: monospace;
+}
+
+/* --- LAYER 4: The Core Emulation Viewport --- */
+#emulator-container {
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center;
+    width: 100vw; 
+    height: 100vh; 
+    position: relative;
+}
+
+/* The strict 3:2 wrapper logic */
+#canvas-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    background-color: #000; 
+    /* The magic to maintain 3:2 and fit inside the wrapper without stretching */
+    aspect-ratio: 3 / 2;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    
+    /* Default Pixel Perfect Rendering */
+    image-rendering: pixelated;
+    
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15); 
+    border-radius: 6px;
+    z-index: 10; 
+    border: 4px solid var(--glass-border); 
+    transition: border 0.3s;
+}
+
+/* Video Filter Classes (Toggled by JS) */
+canvas.filter-bilinear { image-rendering: auto; }
+canvas.filter-lcd { image-rendering: pixelated; opacity: 0.9; /* Advanced shader logic goes in JS */ }
+
+/* Play Overlay */
+#play-overlay { 
+    position: absolute; 
+    display: none; /* Hidden until ROM loaded */
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    width: 100%; 
+    height: 100%; 
+    z-index: 20; 
+    background: rgba(0,0,0,0.2); 
+    backdrop-filter: blur(4px);
+}
+
+#play-overlay.active { 
+    display: flex; 
+}
+
+.status-badge {
+    font-weight: bold; 
+    letter-spacing: 1px; 
+    color: var(--text-main); 
+    background: var(--glass-bg); 
+    padding: 10px 20px; 
+    border-radius: 8px; 
+    backdrop-filter: blur(10px);
+}
+
+.play-btn {
+    background: var(--play-btn); color: #111; font-weight: bold; font-size: 16px;
+    border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; margin-top: 15px;
+}
+.play-btn:hover { transform: scale(1.05); }
+
+/* --- Mobile Touch Interface --- */
+#touch-controls {
+    position: absolute; 
+    bottom: 5%; 
+    width: 100%; 
+    max-width: 1000px;
+    display: none; /* Hidden by default */
+    justify-content: space-between; 
+    padding: 0 20px; 
+    box-sizing: border-box; 
+    z-index: 30;
+}
+
+#touch-controls.active { 
+    display: flex; 
+}
+
+.touch-left-cluster, .touch-right-cluster {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    opacity: 0.6;
+}
+
+.touch-center-cluster {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    padding-bottom: 20px;
+    opacity: 0.6;
+}
+
+.dpad { 
+    display: grid; 
+    gap: 8px; 
+    grid-template-columns: 55px 55px 55px; 
+    grid-template-rows: 55px 55px 55px; 
+}
+
+.action-btns { 
+    display: grid; 
+    gap: 8px; 
+    grid-template-columns: 65px 65px; 
+    align-items: end; 
+    padding-bottom: 25px;
+}
+
+.t-btn { 
+    background: var(--glass-bg); 
+    border: 1px solid var(--glass-border); 
+    backdrop-filter: blur(5px); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+    color: var(--text-main); 
+    font-weight: bold; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    user-select: none;
+    cursor: pointer;
+}
+
+.t-btn:active { 
+    background: #fff; 
+    color: #000;
+    transform: scale(0.95); 
+}
+
+/* Specific Touch Button Shapes */
+.dpad .t-btn { width: 100%; height: 100%; border-radius: 12px; }
+.up { grid-column: 2; grid-row: 1; } 
+.left { grid-column: 1; grid-row: 2; }
+.right { grid-column: 3; grid-row: 2; } 
+.down { grid-column: 2; grid-row: 3; }
+
+.action-btns .t-btn { width: 100%; height: 65px; border-radius: 50%; }
+.b-btn { grid-column: 1; grid-row: 2; margin-bottom: -20px; }
+.a-btn { grid-column: 2; grid-row: 1; }
+
+.bumper { width: 120px; height: 40px; border-radius: 20px; }
+.pill { width: 60px; height: 25px; border-radius: 12px; font-size: 10px; }
