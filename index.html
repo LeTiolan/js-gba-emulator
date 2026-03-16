@@ -11,12 +11,11 @@
             --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             --glass: rgba(255, 255, 255, 0.65);
             --border: rgba(255, 255, 255, 0.9);
-            --text-main: #2d2d3a;
+            --text-main: #111118;
             --text-muted: #717182;
             --accent: #8b9bb4;
             --play-btn: #b5e4ca;
             --shadow: 0 8px 32px rgba(130, 140, 170, 0.15);
-            --svg-lines: #2d2d3a;
         }
 
         /* Dark Theme overrides */
@@ -25,12 +24,11 @@
             --bg-gradient: linear-gradient(135deg, #121218 0%, #0a0a0f 100%);
             --glass: rgba(20, 20, 25, 0.75);
             --border: rgba(255, 255, 255, 0.08);
-            --text-main: #f1f1f1;
+            --text-main: #fcfcfc;
             --text-muted: #888899;
             --accent: #7a7aff;
             --play-btn: #6fc28e;
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-            --svg-lines: #f1f1f1; 
         }
 
         body, html {
@@ -108,11 +106,12 @@
             display: none; justify-content: center; align-items: center; z-index: 200;
         }
         .modal-overlay.active { display: flex; }
+        
+        /* Widened modal for the blueprint graphic */
         .modal-content {
-            background: var(--glass); padding: 30px; border-radius: 16px; 
-            width: 650px; max-width: 95vw; /* Widened for the new blueprint diagram */
+            background: var(--glass); padding: 30px; border-radius: 16px; width: 750px; max-width: 95vw;
             border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px);
-            max-height: 85vh; overflow-y: auto; text-align: left;
+            max-height: 85vh; overflow-y: auto;
         }
         .modal-content::-webkit-scrollbar { width: 6px; }
         .modal-content::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
@@ -181,126 +180,90 @@
 
     <div class="modal-overlay" id="modal-inputs">
         <div class="modal-content">
-            <h3 style="margin-top: 0; text-align: center;">Map Controls</h3>
+            <h3 style="margin-top: 0; text-align: center; font-weight: 900; letter-spacing: 1px;">CONTROLS</h3>
             
-            <h4 style="margin-bottom: 5px; border-bottom: 1px solid var(--border);">Keyboard Layout</h4>
-            <div id="key-list"></div>
-            
-            <h4 style="margin-bottom: 15px; margin-top: 25px; border-bottom: 1px solid var(--border);">W3C Gamepad API Blueprint</h4>
-            
-            <svg viewBox="0 0 800 450" style="width:100%; height:auto; background:transparent; font-family:'Segoe UI', sans-serif;">
+            <svg viewBox="0 0 800 360" style="width:100%; height:auto; background:transparent; font-family:'Segoe UI', sans-serif; margin-bottom: 20px;">
                 
-                <path d="M 280 160 C 300 140, 500 140, 520 160 C 550 160, 580 180, 600 240 C 620 310, 590 390, 560 390 C 530 390, 500 320, 480 300 C 440 290, 360 290, 320 300 C 300 320, 270 390, 240 390 C 210 390, 180 310, 200 240 C 220 180, 250 160, 280 160 Z" fill="none" stroke="var(--svg-lines)" stroke-width="3" stroke-linejoin="round"/>
+                <image href="https://upload.wikimedia.org/wikipedia/commons/4/43/Xbox-console-controller.svg" x="250" y="80" width="300" height="250" opacity="0.6" />
                 
-                <path d="M 275 160 C 280 135, 330 130, 350 145" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
-                <path d="M 525 160 C 520 135, 470 130, 450 145" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
-                <path d="M 285 135 C 290 120, 320 115, 340 130" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
-                <path d="M 515 135 C 510 120, 480 115, 460 130" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
+                <polyline points="240,40 370,40 370,180" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="370" cy="180" r="4" fill="var(--text-main)"/>
+                <rect x="110" y="28" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="175" y="44" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">VIEW [8]</text>
 
-                <circle cx="400" cy="180" r="16" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
-                <path d="M 390 175 Q 400 190 410 175" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
+                <polyline points="240,80 260,80 310,120" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="310" cy="120" r="4" fill="var(--text-main)"/>
+                <rect x="110" y="68" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="175" y="84" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">LT [6]</text>
 
-                <circle cx="350" cy="200" r="8" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <rect x="345" y="196" width="6" height="6" fill="none" stroke="var(--svg-lines)" stroke-width="1.2"/>
-                <rect x="348" y="198" width="6" height="6" fill="var(--bg-color)" stroke="var(--svg-lines)" stroke-width="1.2"/>
-                
-                <circle cx="450" cy="200" r="8" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <line x1="446" y1="197" x2="454" y2="197" stroke="var(--svg-lines)" stroke-width="1.5"/>
-                <line x1="446" y1="200" x2="454" y2="200" stroke="var(--svg-lines)" stroke-width="1.5"/>
-                <line x1="446" y1="203" x2="454" y2="203" stroke="var(--svg-lines)" stroke-width="1.5"/>
+                <polyline points="240,120 260,120 310,140" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="310" cy="140" r="4" fill="var(--text-main)"/>
+                <rect x="110" y="108" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="175" y="124" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">LB [4]</text>
 
-                <circle cx="280" cy="220" r="24" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
-                <circle cx="280" cy="220" r="14" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
+                <polyline points="240,200 260,200 315,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="315" cy="185" r="4" fill="var(--text-main)"/>
+                <rect x="110" y="188" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="175" y="204" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">L-STICK [10]</text>
 
-                <circle cx="460" cy="300" r="24" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
-                <circle cx="460" cy="300" r="14" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-
-                <path d="M 302 280 h 16 v 16 h 16 v 16 h -16 v 16 h -16 v -16 h -16 v -16 h 16 z" fill="none" stroke="var(--svg-lines)" stroke-width="2" stroke-linejoin="round"/>
-
-                <circle cx="530" cy="185" r="10" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <text x="530" y="189" font-size="12" font-weight="bold" text-anchor="middle" fill="var(--svg-lines)">Y</text>
-
-                <circle cx="555" cy="210" r="10" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <text x="555" y="214" font-size="12" font-weight="bold" text-anchor="middle" fill="var(--svg-lines)">B</text>
-
-                <circle cx="530" cy="235" r="10" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <text x="530" y="239" font-size="12" font-weight="bold" text-anchor="middle" fill="var(--svg-lines)">A</text>
-
-                <circle cx="505" cy="210" r="10" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <text x="505" y="214" font-size="12" font-weight="bold" text-anchor="middle" fill="var(--svg-lines)">X</text>
+                <polyline points="240,280 260,280 345,235" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="345" cy="235" r="4" fill="var(--text-main)"/>
+                <rect x="110" y="268" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="175" y="284" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">D-PAD [12-15]</text>
 
 
-                <polyline points="350,200 350,92 140,92" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="350" cy="200" r="4" fill="var(--svg-lines)"/>
-                <polyline points="320,125 320,132 140,132" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="320" cy="125" r="4" fill="var(--svg-lines)"/>
-                <polyline points="290,150 250,172 140,172" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="290" cy="150" r="4" fill="var(--svg-lines)"/>
-                <polyline points="280,220 250,222 140,222" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="280" cy="220" r="4" fill="var(--svg-lines)"/>
-                <polyline points="294,304 250,292 140,292" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="294" cy="304" r="4" fill="var(--svg-lines)"/>
+                <polyline points="560,40 430,40 430,180" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="430" cy="180" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="28" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="44" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">MENU [9]</text>
 
-                <polyline points="450,200 450,92 660,92" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="450" cy="200" r="4" fill="var(--svg-lines)"/>
-                <polyline points="480,125 480,132 660,132" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="480" cy="125" r="4" fill="var(--svg-lines)"/>
-                <polyline points="510,150 550,172 660,172" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="510" cy="150" r="4" fill="var(--svg-lines)"/>
-                <polyline points="530,185 550,212 660,212" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="530" cy="185" r="4" fill="var(--svg-lines)"/>
-                <polyline points="555,210 570,252 660,252" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="555" cy="210" r="4" fill="var(--svg-lines)"/>
-                <polyline points="505,210 505,292 660,292" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="505" cy="210" r="4" fill="var(--svg-lines)"/>
-                <polyline points="530,235 530,332 660,332" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="530" cy="235" r="4" fill="var(--svg-lines)"/>
-                <polyline points="460,300 460,382 660,382" fill="none" stroke="var(--svg-lines)" stroke-width="2"/>
-                <circle cx="460" cy="300" r="4" fill="var(--svg-lines)"/>
+                <polyline points="560,80 540,80 490,120" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="490" cy="120" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="68" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="84" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">RT [7]</text>
 
+                <polyline points="560,120 540,120 490,140" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="490" cy="140" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="108" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="124" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">RB [5]</text>
 
-                <rect x="20" y="80" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="80" y="96" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">VIEW [8]</text>
+                <polyline points="560,160 540,160 490,170" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="490" cy="170" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="148" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="164" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">Y [3]</text>
 
-                <rect x="20" y="120" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="80" y="136" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">LT [6]</text>
+                <polyline points="560,200 540,200 505,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="505" cy="185" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="188" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="204" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">B [1]</text>
 
-                <rect x="20" y="160" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="80" y="176" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">LB [4]</text>
+                <polyline points="560,240 540,240 490,200" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="490" cy="200" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="228" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="244" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">A [0]</text>
 
-                <rect x="20" y="210" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="80" y="226" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">L-STICK [10]</text>
+                <polyline points="560,280 540,280 475,185" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="475" cy="185" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="268" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="284" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">X [2]</text>
 
-                <rect x="20" y="280" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="80" y="296" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">D-PAD [12-15]</text>
-
-                <rect x="660" y="80" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="96" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">MENU [9]</text>
-
-                <rect x="660" y="120" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="136" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">RT [7]</text>
-
-                <rect x="660" y="160" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="176" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">RB [5]</text>
-
-                <rect x="660" y="200" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="216" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">Y [3]</text>
-
-                <rect x="660" y="240" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="256" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">B [1]</text>
-
-                <rect x="660" y="280" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="296" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">X [2]</text>
-
-                <rect x="660" y="320" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="336" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">A [0]</text>
-
-                <rect x="660" y="370" width="120" height="24" rx="12" fill="var(--svg-lines)"/>
-                <text x="720" y="386" text-anchor="middle" fill="var(--bg-color)" font-weight="bold" font-size="12">R-STICK [11]</text>
+                <polyline points="560,320 540,320 455,235" fill="none" stroke="var(--text-main)" stroke-width="2"/>
+                <circle cx="455" cy="235" r="4" fill="var(--text-main)"/>
+                <rect x="560" y="308" width="130" height="24" rx="12" fill="var(--text-main)"/>
+                <text x="625" y="324" text-anchor="middle" fill="var(--bg-color)" font-weight="900" font-size="11" letter-spacing="1">R-STICK [11]</text>
 
             </svg>
 
-            <div id="pad-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+            <div style="display: flex; gap: 40px;">
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 5px; border-bottom: 1px solid var(--border);">Keyboard Layout</h4>
+                    <div id="key-list"></div>
+                </div>
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 5px; border-bottom: 1px solid var(--border);">Gamepad Binds</h4>
+                    <div id="pad-list"></div>
+                </div>
+            </div>
             
             <div class="action-row">
                 <button class="danger-btn" id="btn-reset-keys">Reset Controls</button>
