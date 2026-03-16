@@ -532,3 +532,67 @@ document.getElementById('btn-start-game').addEventListener('click', () => {
         console.error("[Engine] Boot failed: No cartridge inserted.");
     }
 });
+/* =========================================================
+   SECTION 5: THE VIDEO RENDERING PIPELINE
+   ========================================================= */
+
+const VideoCore = {
+    canvas: document.getElementById('screen'),
+    ctx: null,
+    width: 240, // Native GBA horizontal resolution
+    height: 160, // Native GBA vertical resolution
+    imageData: null,
+
+    // 5.1 - Initialize the Canvas Subsystem
+    init: function() {
+        // We use alpha: false to optimize performance since GBA has no transparent screen background
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
+        
+        // Create a blank image buffer exactly the size of a GBA screen
+        this.imageData = this.ctx.createImageData(this.width, this.height);
+        console.log("[Video] 2D Rendering Pipeline initialized.");
+        
+        // Apply the default UI filter on boot
+        const currentFilter = document.getElementById('select-video-filter').value;
+        this.updateFilter(currentFilter);
+    },
+
+    // 5.2 - The Render Call (Fired by the Engine Loop)
+    drawFrame: function(pixelBuffer) {
+        if (!this.ctx) return;
+        
+        // pixelBuffer is a highly optimized Uint8ClampedArray of RGBA values handed over by the WASM core
+        this.imageData.data.set(pixelBuffer);
+        this.ctx.putImageData(this.imageData, 0, 0);
+    },
+
+    // 5.3 - Dynamic CSS Shaders
+    updateFilter: function(filterType) {
+        switch(filterType) {
+            case 'nearest':
+                // Sharp, integer-scaled squares. Perfect for retro games.
+                this.canvas.style.imageRendering = 'pixelated';
+                this.canvas.style.filter = 'none';
+                break;
+            case 'bilinear':
+                // Smooths out the harsh edges
+                this.canvas.style.imageRendering = 'auto';
+                this.canvas.style.filter = 'blur(0.5px)';
+                break;
+            case 'lcd':
+                // Sharp pixels but with a slight color shift/contrast tweak to mimic the unlit GBA screen
+                this.canvas.style.imageRendering = 'pixelated';
+                this.canvas.style.filter = 'contrast(1.1) brightness(0.9) sepia(0.2) hue-rotate(-10deg)';
+                break;
+        }
+        console.log(`[Video] Filter mapped to: ${filterType}`);
+    }
+};
+
+// 5.4 - Hook up the Video Filter Dropdown
+document.getElementById('select-video-filter').addEventListener('change', (e) => {
+    VideoCore.updateFilter(e.target.value);
+});
+
+// Boot the video pipeline when the script loads
+VideoCore.init();
