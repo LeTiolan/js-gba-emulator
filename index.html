@@ -2,93 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Minimal GBA</title>
     <style>
-        /* Color Palette & Base Setup */
         :root {
             --bg-color: #0d0d12;
             --menu-bg: rgba(20, 20, 25, 0.85);
             --text-color: #f1f1f1;
             --accent: #7a7aff;
+            --glass: rgba(255, 255, 255, 0.05);
         }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: var(--bg-color); color: var(--text-color);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; /* Prevents scrollbars */
+            font-family: 'Segoe UI', sans-serif; overflow: hidden;
+            touch-action: none; /* Prevents zooming on mobile */
         }
 
-        /* The Canvas Wrapper */
-        #emulator-container {
-            display: flex; justify-content: center; align-items: center;
-            width: 100vw; height: 100vh;
-        }
+        #emulator-container { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; position: relative; }
         canvas {
-            background-color: #000;
-            image-rendering: pixelated; /* Keeps pixels sharp instead of blurry */
-            width: 100%; max-width: 100vmin; /* Scales to fit screen */
-            aspect-ratio: 3 / 2; /* Exact GBA dimensions */
-            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
-            border-radius: 4px;
+            background-color: #000; image-rendering: pixelated;
+            width: 100%; max-width: 100vmin; aspect-ratio: 3 / 2;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9); border-radius: 4px; z-index: 10;
         }
 
-        /* Minimal Hamburger Menu Button */
-        #menu-btn {
-            position: absolute; top: 20px; left: 25px;
-            background: none; border: none; color: rgba(255,255,255,0.4);
-            font-size: 28px; cursor: pointer; transition: color 0.2s;
-            z-index: 100; padding: 0;
-        }
+        /* Menu System */
+        #menu-btn { position: absolute; top: 20px; left: 25px; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 28px; cursor: pointer; z-index: 100; transition: 0.2s; }
         #menu-btn:hover { color: white; }
-
-        /* Slide-out Menu Panel */
         #menu-panel {
-            position: absolute; top: 0; left: -300px;
-            width: 280px; height: 100%; background: var(--menu-bg);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            display: flex; flex-direction: column;
-            padding: 80px 25px 25px; box-sizing: border-box;
-            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 50; border-right: 1px solid rgba(255,255,255,0.05);
+            position: absolute; top: 0; left: -300px; width: 280px; height: 100%;
+            background: var(--menu-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; flex-direction: column; padding: 80px 25px 25px; box-sizing: border-box;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 50;
         }
         #menu-panel.open { left: 0; }
-
-        /* Menu Buttons */
         .menu-item {
-            background: transparent; color: var(--text-color);
-            border: 1px solid rgba(255,255,255,0.1); padding: 14px 18px;
-            margin-bottom: 12px; font-size: 15px; cursor: pointer;
-            border-radius: 8px; text-align: left; transition: all 0.2s ease;
+            background: transparent; color: var(--text-color); border: 1px solid var(--glass);
+            padding: 14px 18px; margin-bottom: 12px; font-size: 15px; cursor: pointer;
+            border-radius: 8px; text-align: left; transition: all 0.2s;
         }
-        .menu-item:hover { 
-            background: rgba(255,255,255,0.05); 
-            border-color: var(--accent); 
-            transform: translateX(4px);
-        }
-
-        /* Hide the ugly default file input */
+        .menu-item:hover { background: var(--glass); border-color: var(--accent); transform: translateX(4px); }
         #romLoader { display: none; }
-    </style>
-</head>
-<body>
 
-    <button id="menu-btn">☰</button>
+        /* Keybind Modal Overlay */
+        #modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 200;
+        }
+        #modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #1a1a24; padding: 30px; border-radius: 12px;
+            width: 320px; text-align: center; border: 1px solid var(--glass);
+        }
+        .key-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
+        .key-btn { background: var(--glass); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; width: 100px; }
+        .key-btn.listening { background: var(--accent); border-color: white; }
+        .close-btn { margin-top: 20px; background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; width: 100%; }
 
-    <div id="menu-panel">
-        <h2 style="margin-top: 0; font-size: 13px; color: #777; text-transform: uppercase; letter-spacing: 2px;">Emulator Menu</h2>
-        
-        <button class="menu-item" id="btn-load">📁 Load Game (.gba)</button>
-        <button class="menu-item" id="btn-keybinds">⌨️ Keybind Settings</button>
-        <button class="menu-item" id="btn-fullscreen">🔲 Toggle Fullscreen</button>
-        
-        <input type="file" id="romLoader" accept=".gba">
-    </div>
-
-    <div id="emulator-container">
-        <canvas id="screen" width="240" height="160"></canvas>
-    </div>
-
-    <script src="emulator.js"></script>
-</body>
-</html>
+        /* Mobile Touch Controls (Hidden by default) */
+        #touch-controls {
+            position: absolute; bottom: 5%; width: 100%; max-width: 800px;
+            display: none; justify-content: space-between; padding: 0 20px; box-sizing: border-box; z-index: 30;
+        }
+        #touch-controls.active { display: flex; }
+        .dpad, .action-btns { display: grid; gap: 5px; opacity: 0.5; }
+        .dpad { grid-template-columns: 50px 50px 50px; grid-template-rows: 50px 50px 50px; }
+        .action
