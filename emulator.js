@@ -249,3 +249,170 @@ DOM.dummyLoader.addEventListener('change', (e) => {
 
 // Boot the database when the script loads
 initDB();
+/* =========================================================
+   SECTION 3: THE INPUT MANAGER (KEYBOARD & TOUCH)
+   ========================================================= */
+
+// 3.1 - Default Key Bindings
+// Maps GBA buttons to physical keyboard keys
+let keyMap = {
+    'Up': 'ArrowUp',
+    'Down': 'ArrowDown',
+    'Left': 'ArrowLeft',
+    'Right': 'ArrowRight',
+    'A': 'KeyX',
+    'B': 'KeyZ',
+    'L': 'KeyA',
+    'R': 'KeyS',
+    'Start': 'Enter',
+    'Select': 'ShiftRight'
+};
+
+// State tracker to know what is currently being pressed
+const inputState = {
+    'Up': false, 'Down': false, 'Left': false, 'Right': false,
+    'A': false, 'B': false, 'L': false, 'R': false,
+    'Start': false, 'Select': false
+};
+
+// 3.2 - Visual Feedback for Touch Controls
+// This function lights up the on-screen buttons when pressed (via touch OR keyboard)
+function toggleVisualButton(gbaKey, isPressed) {
+    // Find the touch button element that corresponds to this GBA key
+    const btnElement = document.querySelector(`.t-btn[data-key="${gbaKey}"]`);
+    if (btnElement) {
+        if (isPressed) {
+            btnElement.style.background = '#fff';
+            btnElement.style.color = '#000';
+            btnElement.style.transform = 'scale(0.95)';
+        } else {
+            btnElement.style.background = ''; // Revert to CSS default
+            btnElement.style.color = '';
+            btnElement.style.transform = '';
+        }
+    }
+}
+
+// 3.3 - Keyboard Event Listeners
+document.addEventListener('keydown', (e) => {
+    // Prevent default scrolling when using arrow keys
+    if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].indexOf(e.code) > -1) {
+        e.preventDefault();
+    }
+
+    // Check if the pressed key matches anything in our keyMap
+    for (const [gbaKey, physicalKey] of Object.entries(keyMap)) {
+        if (e.code === physicalKey && !inputState[gbaKey]) {
+            inputState[gbaKey] = true;
+            toggleVisualButton(gbaKey, true);
+            console.log(`[Input] ${gbaKey} Pressed`);
+            // Emulation engine hook will go here later
+        }
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    for (const [gbaKey, physicalKey] of Object.entries(keyMap)) {
+        if (e.code === physicalKey) {
+            inputState[gbaKey] = false;
+            toggleVisualButton(gbaKey, false);
+            console.log(`[Input] ${gbaKey} Released`);
+            // Emulation engine hook will go here later
+        }
+    }
+});
+
+// 3.4 - Touch Event Listeners (Mobile Controller)
+const touchButtons = document.querySelectorAll('.t-btn');
+
+touchButtons.forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Prevent accidental zooming/scrolling
+        const gbaKey = btn.getAttribute('data-key');
+        if (!inputState[gbaKey]) {
+            inputState[gbaKey] = true;
+            toggleVisualButton(gbaKey, true);
+            
+            // Trigger tiny haptic vibration if the device supports it
+            if (navigator.vibrate) navigator.vibrate(10); 
+            
+            console.log(`[Touch] ${gbaKey} Pressed`);
+            // Emulation engine hook will go here later
+        }
+    });
+
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const gbaKey = btn.getAttribute('data-key');
+        inputState[gbaKey] = false;
+        toggleVisualButton(gbaKey, false);
+        console.log(`[Touch] ${gbaKey} Released`);
+        // Emulation engine hook will go here later
+    });
+});
+
+// 3.5 - Key Mapping Modal UI Generation
+const keyListContainer = document.getElementById('key-list');
+let isWaitingForBind = false;
+let keyToBind = null;
+
+function renderKeyMapUI() {
+    keyListContainer.innerHTML = ''; // Clear previous list
+    
+    for (const [gbaKey, physicalKey] of Object.entries(keyMap)) {
+        const row = document.createElement('div');
+        row.className = 'menu-item toggle-row';
+        row.style.cursor = 'default';
+        
+        const label = document.createElement('span');
+        label.textContent = gbaKey;
+        label.style.fontWeight = 'bold';
+        
+        const bindBtn = document.createElement('button');
+        bindBtn.className = 'primary-btn';
+        bindBtn.textContent = physicalKey;
+        bindBtn.style.flex = '0 0 150px'; // Keep button widths uniform
+        
+        // Listen for user trying to rebind this key
+        bindBtn.addEventListener('click', () => {
+            if (isWaitingForBind) return; // Prevent multiple simultaneous binds
+            
+            isWaitingForBind = true;
+            keyToBind = gbaKey;
+            bindBtn.textContent = 'Press a key...';
+            bindBtn.style.background = 'var(--danger)';
+            
+            // One-time listener for the next key pressed
+            const binder = (e) => {
+                e.preventDefault();
+                keyMap[keyToBind] = e.code; // Update the map with the new physical key
+                
+                isWaitingForBind = false;
+                keyToBind = null;
+                document.removeEventListener('keydown', binder);
+                
+                renderKeyMapUI(); // Re-render the list to show the new key
+            };
+            
+            document.addEventListener('keydown', binder);
+        });
+        
+        row.appendChild(label);
+        row.appendChild(bindBtn);
+        keyListContainer.appendChild(row);
+    }
+}
+
+// 3.6 - Input Settings Resets & Triggers
+document.getElementById('btn-reset-keys').addEventListener('click', () => {
+    // Hard reset back to default
+    keyMap = {
+        'Up': 'ArrowUp', 'Down': 'ArrowDown', 'Left': 'ArrowLeft', 'Right': 'ArrowRight',
+        'A': 'KeyX', 'B': 'KeyZ', 'L': 'KeyA', 'R': 'KeyS',
+        'Start': 'Enter', 'Select': 'ShiftRight'
+    };
+    renderKeyMapUI();
+});
+
+// Render the UI once on boot so it's ready when the modal opens
+renderKeyMapUI();
