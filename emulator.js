@@ -1,205 +1,224 @@
-// --- Core Elements ---
+// --- Core Elements & State ---
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
-const menuBtn = document.getElementById('menu-btn');
-const menuPanel = document.getElementById('menu-panel');
-const romLoader = document.getElementById('romLoader');
+let emulatorState = 'IDLE'; // IDLE, LOADED, BOOTING, RUNNING
+let bootProgress = 0;
+let currentRomName = "";
 
-// --- Input Management ---
-let keyMap = {
-    'Up': 'ArrowUp', 'Down': 'ArrowDown', 'Left': 'ArrowLeft', 'Right': 'ArrowRight',
-    'A': 'x', 'B': 'z', 'Start': 'Enter', 'Select': 'Shift'
+// --- IndexedDB Setup (For saving ROMs & Save Data) ---
+let db;
+const request = indexedDB.open("GBA_Storage", 1);
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    if (!db.objectStoreNames.contains("roms")) db.createObjectStore("roms", { keyPath: "id" });
+    if (!db.objectStoreNames.contains("saves")) db.createObjectStore("saves", { keyPath: "id" });
 };
+request.onsuccess = (e) => { db = e.target.result; loadLibrary(); };
+
+function saveRomToDB(fileName, data) {
+    const transaction = db.transaction(["roms"], "readwrite");
+    transaction.objectStore("roms").put({ id: fileName, data: data, name: fileName });
+    loadLibrary();
+}
+
+function loadLibrary() {
+    const list = document.getElementById('library-list');
+    const transaction = db.transaction(["roms"], "readonly");
+    const request = transaction.objectStore("roms").getAll();
+    request.onsuccess = (e) => {
+        const games = e.target.result;
+        if (games.length === 0) { list.innerHTML = "No games saved yet."; return; }
+        list.innerHTML = '';
+        games.forEach(g => {
+            const btn = document.createElement('button');
+            btn.className = 'menu-item';
+            btn.style.width = '100%';
+            btn.innerText = `🎮 ${g.name}`;
+            btn.onclick = () => loadGameFromMemory(g.data, g.name);
+            list.appendChild(btn);
+        });
+    };
+}
+
+// --- Inputs & Keybinds ---
+const defaultKeyMap = { 'Up': 'ArrowUp', 'Down': 'ArrowDown', 'Left': 'ArrowLeft', 'Right': 'ArrowRight', 'A': 'x', 'B': 'z', 'Start': 'Enter', 'Select': 'Shift' };
+const defaultPadMap = { 'Up': 12, 'Down': 13, 'Left': 14, 'Right': 15, 'A': 0, 'B': 1, 'Start': 9, 'Select': 8 };
+
+let keyMap = { ...defaultKeyMap };
+let padMap = { ...defaultPadMap };
 let inputState = { Up: 0, Down: 0, Left: 0, Right: 0, A: 0, B: 0, Start: 0, Select: 0 };
 
 window.addEventListener('keydown', (e) => handleKey(e.key, 1));
 window.addEventListener('keyup', (e) => handleKey(e.key, 0));
 
 function handleKey(key, isPressed) {
-    for (const [gbaBtn, mappedKey] of Object.entries(keyMap)) {
-        if (key.toLowerCase() === mappedKey.toLowerCase()) {
-            inputState[gbaBtn] = isPressed;
-        }
+    for (const [btn, mappedKey] of Object.entries(keyMap)) {
+        if (key.toLowerCase() === mappedKey.toLowerCase()) inputState[btn] = isPressed;
     }
 }
 
 function pollGamepad() {
-    const gamepads = navigator.getGamepads();
-    if (!gamepads[0]) return;
-    const gp = gamepads[0];
-    inputState['A'] = gp.buttons[0]?.pressed ? 1 : 0;
-    inputState['B'] = gp.buttons[1]?.pressed ? 1 : 0;
-    inputState['Left'] = gp.axes[0] < -0.5 ? 1 : 0;
-    inputState['Right'] = gp.axes[0] > 0.5 ? 1 : 0;
-}
-
-// --- Keybind UI Logic ---
-const modal = document.getElementById('modal-overlay');
-const keyList = document.getElementById('key-list');
-let listeningForKey = null;
-
-document.getElementById('btn-keybinds').addEventListener('click', () => {
-    menuPanel.classList.remove('open');
-    renderKeybinds();
-    modal.classList.add('active');
-});
-
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    modal.classList.remove('active');
-    listeningForKey = null;
-});
-
-function renderKeybinds() {
-    keyList.innerHTML = '';
-    for (const [gbaBtn, mappedKey] of Object.entries(keyMap)) {
-        const row = document.createElement('div');
-        row.className = 'key-row';
-        row.innerHTML = `<span>${gbaBtn}</span> <button class="key-btn" id="map-${gbaBtn}">${mappedKey}</button>`;
-        keyList.appendChild(row);
-
-        document.getElementById(`map-${gbaBtn}`).addEventListener('click', function() {
-            if (listeningForKey) document.getElementById(`map-${listeningForKey}`).classList.remove('listening');
-            listeningForKey = gbaBtn;
-            this.innerText = "Press Key...";
-            this.classList.add('listening');
-        });
+    const gps = navigator.getGamepads();
+    if (!gps[0]) return;
+    const gp = gps[0];
+    
+    // Check mapping logic (buttons + Dpad axes fallback)
+    for (const [btn, padBtnIdx] of Object.entries(padMap)) {
+        if (gp.buttons[padBtnIdx]) {
+            inputState[btn] = gp.buttons[padBtnIdx].pressed ? 1 : 0;
+        }
     }
 }
 
+// --- UI & Modals ---
+const menuBtn = document.getElementById('menu-btn');
+const menuPanel = document.getElementById('menu-panel');
+menuBtn.onclick = (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); };
+
+// Dark Mode Toggle
+document.getElementById('btn-theme').onclick = () => {
+    document.body.classList.toggle('dark-mode');
+};
+
+// Modals
+document.getElementById('btn-keybinds').onclick = () => { buildKeyUI(); document.getElementById('modal-inputs').classList.add('active'); menuPanel.classList.remove('open'); };
+document.getElementById('btn-close-keys').onclick = () => document.getElementById('modal-inputs').classList.remove('active');
+document.getElementById('btn-library').onclick = () => { document.getElementById('modal-library').classList.add('active'); menuPanel.classList.remove('open'); };
+document.getElementById('btn-close-library').onclick = () => document.getElementById('modal-library').classList.remove('active');
+
+document.getElementById('btn-reset-keys').onclick = () => {
+    keyMap = { ...defaultKeyMap }; padMap = { ...defaultPadMap };
+    buildKeyUI();
+};
+
+let listeningBtn = null; let listeningType = null;
+function buildKeyUI() {
+    const kList = document.getElementById('key-list'); kList.innerHTML = '';
+    const pList = document.getElementById('pad-list'); pList.innerHTML = '';
+    
+    for (const btn of Object.keys(keyMap)) {
+        // Keyboard mapping
+        kList.innerHTML += `<div class="key-row"><span>${btn}</span> <button class="key-btn" id="km-${btn}">${keyMap[btn]}</button></div>`;
+        // Gamepad mapping
+        pList.innerHTML += `<div class="key-row"><span>${btn}</span> <button class="key-btn" id="pm-${btn}">Btn ${padMap[btn]}</button></div>`;
+    }
+    
+    for (const btn of Object.keys(keyMap)) {
+        document.getElementById(`km-${btn}`).onclick = function() { listeningBtn = btn; listeningType = 'key'; this.innerText = "..."; };
+        document.getElementById(`pm-${btn}`).onclick = function() { listeningBtn = btn; listeningType = 'pad'; this.innerText = "..."; };
+    }
+}
+
+// Capture Keyboard Remap
 window.addEventListener('keydown', (e) => {
-    if (listeningForKey) {
-        keyMap[listeningForKey] = e.key;
-        listeningForKey = null;
-        renderKeybinds();
+    if (listeningBtn && listeningType === 'key') {
+        keyMap[listeningBtn] = e.key; listeningBtn = null; buildKeyUI();
     }
 });
 
-// --- UI Toggles ---
-document.getElementById('btn-touch').addEventListener('click', () => {
-    document.getElementById('touch-controls').classList.toggle('active');
-    menuPanel.classList.remove('open');
-});
-
-menuBtn.addEventListener('click', (e) => { 
-    e.stopPropagation(); 
-    menuPanel.classList.toggle('open'); 
-});
-
-document.addEventListener('click', (e) => {
-    if (!menuPanel.contains(e.target) && menuPanel.classList.contains('open') && e.target !== menuBtn) {
-        menuPanel.classList.remove('open');
+// Capture Gamepad Remap (Polls heavily when in menu)
+setInterval(() => {
+    if (listeningBtn && listeningType === 'pad') {
+        const gps = navigator.getGamepads();
+        if (gps[0]) {
+            gps[0].buttons.forEach((b, idx) => {
+                if (b.pressed) { padMap[listeningBtn] = idx; listeningBtn = null; buildKeyUI(); }
+            });
+        }
     }
-});
-
-document.getElementById('btn-fullscreen').addEventListener('click', () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-    menuPanel.classList.remove('open');
-});
-document.getElementById('btn-load').addEventListener('click', () => { 
-    romLoader.click(); 
-    menuPanel.classList.remove('open'); 
-});
+}, 50);
 
 
-// --- Rom Loading ---
-let romMemory = null;
+// --- ROM Loading & Play Flow ---
+document.getElementById('btn-load').onclick = () => { document.getElementById('romLoader').click(); menuPanel.classList.remove('open'); };
 
-romLoader.addEventListener('change', function(event) {
-    const file = event.target.files[0];
+document.getElementById('romLoader').addEventListener('change', function(e) {
+    const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = function(e) {
-        romMemory = new Uint8Array(e.target.result);
-        console.log(`ROM Loaded: ${romMemory.length} bytes`);
-        
-        // Trigger the visual boot sequence!
-        emulatorState = 'BOOTING'; 
-        bootProgress = 0; 
+        const data = new Uint8Array(e.target.result);
+        saveRomToDB(file.name, data);
+        loadGameFromMemory(data, file.name);
     };
     reader.readAsArrayBuffer(file);
 });
 
+let romMemory = null;
+function loadGameFromMemory(data, name) {
+    romMemory = data;
+    currentRomName = name;
+    emulatorState = 'LOADED';
+    document.getElementById('modal-library').classList.remove('active');
+    
+    // Show the Press Play Button Overlay
+    document.getElementById('play-overlay').classList.add('active');
+}
 
-// --- Screen Rendering & Boot Sequence ---
-let emulatorState = 'IDLE'; // States: 'IDLE', 'BOOTING', 'RUNNING'
-let bootProgress = 0;
+// "PRESS PLAY" Button Logic
+document.getElementById('btn-start-game').onclick = () => {
+    // 1. Enter Fullscreen natively
+    document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen blocked"));
+    // 2. Hide button
+    document.getElementById('play-overlay').classList.remove('active');
+    // 3. Trigger Boot sequence
+    emulatorState = 'BOOTING';
+    bootProgress = 0;
+};
 
+
+// --- Auto-Save Loop ---
+setInterval(() => {
+    if (emulatorState === 'RUNNING' && currentRomName) {
+        console.log(`Auto-saving data for ${currentRomName}...`);
+        // Future logic: Dump Cartridge SRAM/Flash array to IndexedDB here
+        // db.transaction(["saves"], "readwrite").objectStore("saves").put({ id: currentRomName, data: saveRamArray });
+    }
+}, 300000); // 5 minutes (300,000 ms)
+
+
+// --- Screen Rendering ---
 function renderLoop() {
-    pollGamepad(); // Constantly check for controller input
+    pollGamepad();
 
-    if (emulatorState === 'IDLE') {
+    if (emulatorState === 'IDLE' || emulatorState === 'LOADED') {
         const time = Date.now() / 1000;
-        
-        // Soft, bright gradient for the quartz look
-        let gradient = ctx.createLinearGradient(0, 0, 240, 160);
-        gradient.addColorStop(0, `#eef2f5`);
-        gradient.addColorStop(1, `#d9e2ec`);
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = document.body.classList.contains('dark-mode') ? '#121218' : '#eef2f5';
         ctx.fillRect(0, 0, 240, 160);
 
-        const alpha = (Math.sin(time * 3) + 1) / 2 * 0.5 + 0.3;
-        ctx.fillStyle = `rgba(139, 155, 180, ${alpha})`; // Soft accent color
-        ctx.font = 'bold 12px "Segoe UI", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('INSERT CARTRIDGE', 120, 85);
-        
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(8, 8, 224, 144);
+        if (emulatorState === 'IDLE') {
+            const alpha = (Math.sin(time * 3) + 1) / 2 * 0.5 + 0.3;
+            ctx.fillStyle = `rgba(139, 155, 180, ${alpha})`;
+            ctx.font = 'bold 12px "Segoe UI"'; ctx.textAlign = 'center';
+            ctx.fillText('INSERT CARTRIDGE', 120, 85);
+        } else {
+            // LOADED State - Just a blank background, the HTML overlay handles the button
+        }
     } 
-    
     else if (emulatorState === 'BOOTING') {
         bootProgress += 0.015; 
-        
         if (bootProgress < 1.0) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, 240, 160);
-            
-            ctx.fillStyle = '#2d2d3a';
-            ctx.font = 'bold 20px "Segoe UI", sans-serif';
-            ctx.textAlign = 'center';
-            
-            let yPos = Math.min(85, -20 + (bootProgress * 100) * 1.5);
-            ctx.fillText('QUARTZ OS', 120, yPos);
-            
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 240, 160);
+            ctx.fillStyle = '#2d2d3a'; ctx.font = 'bold 20px "Segoe UI"'; ctx.textAlign = 'center';
+            ctx.fillText('QUARTZ OS', 120, Math.min(85, -20 + (bootProgress * 100) * 1.5));
         } else if (bootProgress < 2.0) {
-            let fadeAlpha = bootProgress - 1.0;
-            ctx.fillStyle = `rgba(45, 45, 58, ${fadeAlpha})`; // Fade to dark slate
-            ctx.fillRect(0, 0, 240, 160);
-            
+            ctx.fillStyle = `rgba(0, 0, 0, ${bootProgress - 1.0})`; ctx.fillRect(0, 0, 240, 160);
         } else {
             emulatorState = 'RUNNING';
-            console.log("Boot sequence complete.");
             startEmulatorCore();
             return;
         }
     }
 
-    if (emulatorState !== 'RUNNING') {
-        requestAnimationFrame(renderLoop);
-    }
+    if (emulatorState !== 'RUNNING') requestAnimationFrame(renderLoop);
 }
 renderLoop();
 
-
-// --- The Game Core Placeholder ---
+// --- Game Core Placeholder ---
 function startEmulatorCore() {
     setInterval(() => {
-        // Draw dark slate background
-        ctx.fillStyle = '#2d2d3a';
-        ctx.fillRect(0, 0, 240, 160);
-        
-        // Gentle static to indicate activity
-        for(let i = 0; i < 300; i++) {
-            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.1)';
-            ctx.fillRect(Math.random() * 240, Math.random() * 160, 2, 2);
-        }
-        
-        ctx.fillStyle = '#8b9bb4'; // Accent color
-        ctx.font = 'bold 12px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('CPU CORE ACTIVE...', 120, 80);
+        ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 240, 160);
+        ctx.fillStyle = '#8b9bb4'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(`PLAYING: ${currentRomName.substring(0,10)}...`, 120, 80);
     }, 1000 / 60); 
 }
