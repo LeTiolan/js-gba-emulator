@@ -130,3 +130,122 @@ DOM.btnStartGame.addEventListener('click', () => {
     
     // Note: The actual DataTransfer to the emulator engine will go here in Section 4.
 });
+/* =========================================================
+   SECTION 2: INDEXEDDB STORAGE & GAME LIBRARY
+   ========================================================= */
+
+const DB_NAME = 'QuartzGBA_DB';
+const DB_VERSION = 1;
+const STORE_ROMS = 'roms';
+
+let dbInstance = null;
+
+// 2.1 - Initialize Local Database
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_ROMS)) {
+                // We use the file name as the unique key
+                db.createObjectStore(STORE_ROMS, { keyPath: 'name' });
+            }
+        };
+        
+        request.onsuccess = (e) => {
+            dbInstance = e.target.result;
+            console.log("[System] IndexedDB Initialized.");
+            refreshLibraryUI(); // Render the library immediately on boot
+            resolve(dbInstance);
+        };
+        
+        request.onerror = (e) => {
+            console.error("[System] IndexedDB Error:", e.target.error);
+            reject(e.target.error);
+        };
+    });
+}
+
+// 2.2 - Save Uploaded ROM to Database
+function saveRomToDB(file) {
+    if (!dbInstance) return;
+    const transaction = dbInstance.transaction([STORE_ROMS], 'readwrite');
+    const store = transaction.objectStore(STORE_ROMS);
+    
+    // Package the raw file data with a timestamp
+    const romRecord = {
+        name: file.name,
+        data: file,
+        added: Date.now()
+    };
+    
+    store.put(romRecord);
+    
+    transaction.oncomplete = () => {
+        console.log(`[Library] ${file.name} saved to local storage.`);
+        refreshLibraryUI();
+    };
+}
+
+// 2.3 - Render the Library UI
+function refreshLibraryUI() {
+    if (!dbInstance) return;
+    const listContainer = document.getElementById('library-list');
+    listContainer.innerHTML = ''; // Clear current list
+
+    const transaction = dbInstance.transaction([STORE_ROMS], 'readonly');
+    const store = transaction.objectStore(STORE_ROMS);
+    const request = store.getAll();
+
+    request.onsuccess = (e) => {
+        const roms = e.target.result;
+        
+        // Empty state fallback
+        if (roms.length === 0) {
+            listContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No games found. Load a cartridge to add it to your collection!</p>';
+            return;
+        }
+
+        // Sort library so the newest added games are at the top
+        roms.sort((a, b) => b.added - a.added);
+
+        // Generate the Buttons
+        roms.forEach(rom => {
+            const btn = document.createElement('button');
+            btn.className = 'menu-item';
+            btn.style.width = '100%'; 
+            
+            // Remove the ".gba" extension for a cleaner UI display
+            const cleanName = rom.name.replace(/\.[^/.]+$/, "");
+            btn.textContent = `🕹️ ${cleanName}`;
+            
+            // 2.4 - Clicking a game in the library
+            btn.addEventListener('click', () => {
+                // Hook into the pendingRomFile variable from Section 1
+                pendingRomFile = rom.data; 
+                console.log(`[Library] Selected ${rom.name} from database.`);
+                
+                // Close the library modal natively
+                closeModal(DOM.modalLibrary);
+                
+                // Trigger the "PRESS PLAY" sequence
+                DOM.playOverlay.classList.add('active');
+            });
+            
+            listContainer.appendChild(btn);
+        });
+    };
+}
+
+// 2.5 - Hook into Section 1's File Upload
+// When the user uploads a file using "Load Cartridge", we intercept it and save it.
+DOM.dummyLoader.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        saveRomToDB(file);
+    }
+});
+
+// Boot the database when the script loads
+initDB();
