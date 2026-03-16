@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quartz GBA</title>
     <style>
+        /* --- THEME & STYLES --- */
         :root {
             --bg-color: #f0f2f5;
             --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
@@ -36,13 +37,13 @@
             overflow: hidden; touch-action: none; 
         }
 
-        /* UI Elements */
         #theme-fade-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: #000; z-index: 9999; opacity: 0; pointer-events: none;
             transition: opacity 0.4s ease-in-out;
         }
 
+        /* --- UI COMPONENTS --- */
         #menu-btn {
             position: absolute; top: 20px; left: 25px; background: var(--glass); border: 1px solid var(--border);
             color: var(--text-main); font-size: 24px; cursor: pointer; z-index: 100; padding: 6px 12px; 
@@ -66,7 +67,6 @@
 
         .toggle-row { display: flex; justify-content: space-between; align-items: center; cursor: default; }
 
-        /* Switches */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--text-muted); transition: .3s; border-radius: 24px; }
@@ -74,7 +74,7 @@
         input:checked + .slider { background-color: var(--play-btn); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Main Container */
+        /* --- EMULATOR LAYOUT --- */
         #emulator-container {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             width: 100vw; height: 100vh; position: relative;
@@ -87,7 +87,6 @@
             z-index: 10; border: 4px solid var(--border);
         }
 
-        /* Overlays */
         #play-overlay { 
             position: absolute; display: none; flex-direction: column; align-items: center; 
             justify-content: center; width: 100%; height: 100%; z-index: 20; 
@@ -100,9 +99,8 @@
             border: none; padding: 14px 40px; border-radius: 8px; cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; margin-top: 20px;
         }
-        .play-btn:hover { transform: scale(1.05); }
 
-        /* Modals */
+        /* --- MODALS --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0, 0.4); backdrop-filter: blur(8px);
@@ -112,9 +110,10 @@
         .modal-content {
             background: var(--glass); padding: 30px; border-radius: 16px; width: 500px; max-width: 90vw;
             border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px);
+            max-height: 80vh; overflow-y: auto;
         }
 
-        /* Mobile Controls */
+        /* --- TOUCH CONTROLS --- */
         #touch-controls {
             position: absolute; bottom: 8%; width: 100%; max-width: 800px;
             display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 30;
@@ -140,10 +139,10 @@
     <button id="menu-btn">☰</button>
 
     <div id="menu-panel">
-        <h2 style="margin-top: 0; font-size: 12px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;">System</h2>
+        <h2 style="margin-top: 0; font-size: 12px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;">System Options</h2>
         <button class="menu-item" id="btn-load">📁 Load Cartridge</button>
         <button class="menu-item" id="btn-library">📚 Game Library</button>
-        <button class="menu-item" id="btn-keybinds">🎮 Controls</button>
+        <button class="menu-item" id="btn-keybinds">🎮 Input Settings</button>
         
         <div class="menu-item toggle-row">
             <span>📱 Mobile UI</span>
@@ -165,14 +164,23 @@
     <div class="modal-overlay" id="modal-library">
         <div class="modal-content">
             <h3 style="text-align: center;">Collection</h3>
-            <div id="library-list" style="max-height: 300px; overflow-y: auto;"></div>
+            <div id="library-list"></div>
             <button class="menu-item" id="btn-close-library" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-inputs">
+        <div class="modal-content">
+            <h3 style="text-align: center;">Controls</h3>
+            <div id="key-list">
+                </div>
+            <button class="menu-item" id="btn-close-keys" style="margin-top: 20px;">Save & Close</button>
         </div>
     </div>
 
     <div id="emulator-container">
         <div id="play-overlay">
-            <div style="font-weight: bold; letter-spacing: 1px; color: #fff; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 8px;">Cartridge Ready</div>
+            <div style="font-weight: bold; letter-spacing: 1px; color: #fff; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(5px);">Cartridge Ready</div>
             <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
         </div>
         
@@ -186,8 +194,8 @@
                 <div class="t-btn down" data-key="Down">↓</div>
             </div>
             <div class="action-btns">
-                <div class="t-btn" data-key="B">B</div>
-                <div class="t-btn" data-key="A">A</div>
+                <div class="t-btn b-btn" data-key="B">B</div>
+                <div class="t-btn a-btn" data-key="A">A</div>
             </div>
         </div>
     </div>
