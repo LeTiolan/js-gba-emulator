@@ -4,165 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quartz GBA</title>
-    <style>
-        /* Light Theme (Quartz) */
-        :root {
-            --bg-color: #f0f2f5;
-            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-            --glass: rgba(255, 255, 255, 0.65);
-            --border: rgba(255, 255, 255, 0.9);
-            --text-main: #111118;
-            --text-muted: #717182;
-            --accent: #8b9bb4;
-            --play-btn: #b5e4ca;
-            --shadow: 0 8px 32px rgba(130, 140, 170, 0.15);
-        }
-
-        /* Dark Theme overrides */
-        body.dark-mode {
-            --bg-color: #0d0d12;
-            --bg-gradient: linear-gradient(135deg, #121218 0%, #0a0a0f 100%);
-            --glass: rgba(20, 20, 25, 0.75);
-            --border: rgba(255, 255, 255, 0.08);
-            --text-main: #fcfcfc;
-            --text-muted: #888899;
-            --accent: #7a7aff;
-            --play-btn: #6fc28e;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-        }
-
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color); background-image: var(--bg-gradient); 
-            color: var(--text-main); font-family: 'Segoe UI', sans-serif;
-            overflow: hidden; touch-action: none; 
-        }
-
-        /* Cinematic Fade Layer */
-        #theme-fade-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000; z-index: 9999; opacity: 0; pointer-events: none;
-            transition: opacity 0.4s ease-in-out;
-        }
-
-        #emulator-container {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            width: 100vw; height: 100vh; position: relative;
-        }
-        
-        canvas {
-            background-color: #000; image-rendering: pixelated;
-            width: 100%; max-width: 100vmin; aspect-ratio: 3 / 2;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15); border-radius: 6px;
-            z-index: 10; border: 4px solid var(--border); transition: border 0.3s;
-        }
-
-        /* The Overlay Play Button */
-        #play-overlay { 
-            position: absolute; 
-            display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            width: 100%; 
-            height: 100%; 
-            z-index: 20; 
-            background: rgba(0,0,0,0.2); 
-            backdrop-filter: blur(4px);
-        }
-        #play-overlay.active { display: flex; }
-
-        .play-btn {
-            background: var(--play-btn); color: #111; font-weight: bold; font-size: 16px;
-            border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; margin-top: 15px;
-        }
-        .play-btn:hover { transform: scale(1.05); }
-
-        /* Menus and UI */
-        #menu-btn {
-            position: absolute; top: 20px; left: 25px; background: var(--glass); border: 1px solid var(--border);
-            color: var(--text-main); font-size: 24px; cursor: pointer; z-index: 100; padding: 6px 12px; 
-            border-radius: 8px; backdrop-filter: blur(10px); box-shadow: var(--shadow);
-        }
-        #menu-panel {
-            position: absolute; top: 0; left: -320px; width: 300px; height: 100%;
-            background: var(--glass); backdrop-filter: blur(20px);
-            display: flex; flex-direction: column; padding: 90px 25px 25px; box-sizing: border-box;
-            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 50; border-right: 1px solid var(--border);
-        }
-        #menu-panel.open { left: 0; }
-        
-        .menu-item {
-            background: rgba(150,150,150,0.1); color: var(--text-main); border: 1px solid var(--border); 
-            padding: 14px 18px; margin-bottom: 12px; font-size: 14px; font-weight: 600; cursor: pointer; 
-            border-radius: 10px; text-align: left; transition: all 0.2s;
-        }
-        .menu-item:hover { background: rgba(150,150,150,0.2); transform: translateY(-2px); }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; cursor: default; }
-        .toggle-row:hover { transform: none; }
-        
-        /* Hidden file inputs */
-        #romLoader, #dummyLoader { display: none; }
-
-        /* iOS Style Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--text-muted); transition: .3s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--play-btn); }
-        input:checked + .slider:before { transform: translateX(20px); }
-
-        /* Modals */
-        .modal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0, 0.4); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 200;
-        }
-        .modal-overlay.active { display: flex; }
-        
-        .modal-content {
-            background: var(--glass); padding: 30px; border-radius: 16px; width: 650px; max-width: 95vw;
-            border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px);
-            max-height: 85vh; overflow-y: auto;
-        }
-        
-        .action-row { display: flex; gap: 10px; margin-top: 20px; }
-        .primary-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
-        .danger-btn { background: #d9534f; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
-
-        /* Mobile Touch Controls */
-        #touch-controls {
-            position: absolute; bottom: 8%; width: 100%; max-width: 800px;
-            display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 30;
-        }
-        #touch-controls.active { display: flex; }
-        .dpad, .action-btns { display: grid; gap: 8px; opacity: 0.6; }
-        .dpad { grid-template-columns: 55px 55px 55px; grid-template-rows: 55px 55px 55px; }
-        .action-btns { grid-template-columns: 65px 65px; align-items: end; padding-bottom: 25px;}
-        .t-btn { 
-            background: var(--glass); border: 1px solid var(--border); border-radius: 50%; 
-            width: 100%; height: 100%; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
-            color: var(--text-main); font-weight: bold; display: flex; justify-content: center; 
-            align-items: center; user-select: none;
-        }
-        .t-btn:active { background: #fff; transform: scale(0.95); }
-        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div id="theme-fade-overlay"></div>
+    <div id="fps-counter" style="display: none;">60 FPS</div>
 
-    <button id="menu-btn">☰</button>
+    <button id="menu-btn" aria-label="Open Menu">☰</button>
 
-    <div id="menu-panel">
-        <h2 style="margin-top: 0; font-size: 12px; color: var(--text-muted); letter-spacing: 2px;">System Options</h2>
+    <nav id="menu-panel">
+        <h2>System Options</h2>
+        
         <button class="menu-item" id="btn-load">📁 Load Cartridge</button>
         <button class="menu-item" id="btn-library">📚 Game Library</button>
-        <button class="menu-item" id="btn-keybinds">🎮 Input Settings</button>
         
+        <div class="menu-item action-row">
+            <button class="primary-btn" id="btn-save-state">💾 Save State</button>
+            <button class="primary-btn" id="btn-load-state">📂 Load State</button>
+        </div>
+
+        <button class="menu-item" id="btn-keybinds">🎮 Input Settings</button>
+        <button class="menu-item" id="btn-cheats">🛠️ Cheat Manager</button>
+        <button class="menu-item" id="btn-link-cable">🔗 Connect Link Cable</button>
+
+        <div class="menu-item toggle-row">
+            <span>🎨 Video Filter</span>
+            <select id="select-video-filter">
+                <option value="nearest">Pixel Perfect</option>
+                <option value="bilinear">Smooth</option>
+                <option value="lcd">LCD Ghosting</option>
+            </select>
+        </div>
+
+        <div class="menu-item toggle-row">
+            <span>🔊 Master Volume</span>
+            <input type="range" id="slider-volume" min="0" max="100" value="100">
+        </div>
+
         <div class="menu-item toggle-row">
             <span>📱 Mobile UI</span>
             <label class="switch">
@@ -170,6 +49,15 @@
                 <span class="slider"></span>
             </label>
         </div>
+        
+        <div class="menu-item toggle-row">
+            <span>⏩ Fast-Forward</span>
+            <label class="switch">
+                <input type="checkbox" id="toggle-fast-forward">
+                <span class="slider"></span>
+            </label>
+        </div>
+
         <div class="menu-item toggle-row">
             <span>🌙 Dark Mode</span>
             <label class="switch">
@@ -178,22 +66,28 @@
             </label>
         </div>
 
-        <input type="file" id="romLoader" accept=".gba">
-        <input type="file" id="dummyLoader" accept=".gba">
-    </div>
+        <input type="file" id="romLoader" accept=".gba" style="display: none;">
+        <input type="file" id="dummyLoader" accept=".gba" style="display: none;">
+    </nav>
 
     <div class="modal-overlay" id="modal-library">
         <div class="modal-content">
-            <h3 style="text-align: center;">Collection</h3>
-            <div id="library-list"></div>
-            <button class="menu-item" id="btn-close-library" style="margin-top: 20px;">Close</button>
+            <h3>Collection</h3>
+            <div id="library-list">
+                </div>
+            <div class="action-row" style="margin-top: 20px;">
+                <button class="primary-btn" id="btn-import-sav">Import .sav</button>
+                <button class="primary-btn" id="btn-export-sav">Export .sav</button>
+            </div>
+            <button class="menu-item" id="btn-close-library" style="margin-top: 10px;">Close</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="modal-inputs">
         <div class="modal-content">
-            <h3 style="text-align: center;">CONTROLS</h3>
-            <div id="key-list"></div>
+            <h3>Controls</h3>
+            <div id="key-list">
+                </div>
             <div class="action-row">
                 <button class="danger-btn" id="btn-reset-keys">Reset Default</button>
                 <button class="primary-btn" id="btn-close-keys">Save & Close</button>
@@ -201,97 +95,57 @@
         </div>
     </div>
 
-    <div id="emulator-container">
-        <div id="play-overlay">
-            <div style="font-weight: bold; letter-spacing: 1px; color: var(--text-main); background: var(--glass); padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);">Cartridge ready</div>
-            <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
-        </div>
-
-        <canvas id="screen" width="240" height="160"></canvas>
-        
-        <div id="touch-controls">
-            <div class="dpad">
-                <div class="t-btn up" data-key="Up"></div>
-                <div class="t-btn left" data-key="Left"></div>
-                <div class="t-btn right" data-key="Right"></div>
-                <div class="t-btn down" data-key="Down"></div>
-            </div>
-            <div class="action-btns">
-                <div class="t-btn b-btn" data-key="B">B</div>
-                <div class="t-btn a-btn" data-key="A">A</div>
+    <div class="modal-overlay" id="modal-cheats">
+        <div class="modal-content">
+            <h3>Memory Patching</h3>
+            <p>Paste GameShark or CodeBreaker codes below:</p>
+            <textarea id="cheat-input-area" rows="6" style="width: 100%;"></textarea>
+            <div class="action-row">
+                <button class="primary-btn" id="btn-apply-cheats">Apply Codes</button>
+                <button class="menu-item" id="btn-close-cheats">Close</button>
             </div>
         </div>
     </div>
 
-    <script src="https://tawanvhs.github.io/IodineGBA/IodineGBA/IodineGBA.js"></script>
+    <main id="emulator-container">
+        
+        <div id="play-overlay">
+            <div class="status-badge">Cartridge ready</div>
+            <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="screen" width="240" height="160"></canvas>
+        </div>
+        
+        <div id="touch-controls">
+            <div class="touch-left-cluster">
+                <div class="t-btn bumper" data-key="L">L</div>
+                <div class="dpad">
+                    <div class="t-btn up" data-key="Up"></div>
+                    <div class="t-btn left" data-key="Left"></div>
+                    <div class="t-btn right" data-key="Right"></div>
+                    <div class="t-btn down" data-key="Down"></div>
+                </div>
+            </div>
+
+            <div class="touch-center-cluster">
+                <div class="t-btn pill" data-key="Select">SEL</div>
+                <div class="t-btn pill" data-key="Start">STR</div>
+            </div>
+
+            <div class="touch-right-cluster">
+                <div class="t-btn bumper" data-key="R">R</div>
+                <div class="action-btns">
+                    <div class="t-btn b-btn" data-key="B">B</div>
+                    <div class="t-btn a-btn" data-key="A">A</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
     <script src="emulator.js"></script>
 
-    <script>
-        const menuBtn = document.getElementById('menu-btn');
-        const menuPanel = document.getElementById('menu-panel');
-        const loadBtn = document.getElementById('btn-load');
-        const dummyLoader = document.getElementById('dummyLoader');
-        const realLoader = document.getElementById('romLoader');
-        const playOverlay = document.getElementById('play-overlay');
-        const startBtn = document.getElementById('btn-start-game');
-        const darkModeToggle = document.getElementById('toggle-dark-mode');
-        const mobileToggle = document.getElementById('toggle-mobile-ui');
-        const touchControls = document.getElementById('touch-controls');
-
-        // Toggle Sidebar Menu
-        menuBtn.addEventListener('click', () => {
-            menuPanel.classList.toggle('open');
-        });
-
-        // Load Button triggers Dummy Picker
-        loadBtn.addEventListener('click', () => {
-            dummyLoader.click();
-        });
-
-        // When game is picked, show "PRESS PLAY"
-        dummyLoader.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                menuPanel.classList.remove('open');
-                playOverlay.classList.add('active');
-            }
-        });
-
-        // Press Play Logic
-        startBtn.addEventListener('click', () => {
-            if (dummyLoader.files.length === 0) return;
-
-            // 1. Hide the overlay
-            playOverlay.classList.remove('active');
-
-            // 2. Hand the file from Dummy to Real Loader
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(dummyLoader.files[0]);
-            realLoader.files = dataTransfer.files;
-
-            // 3. Trigger the emulator's 'change' event manually
-            const event = new Event('change', { bubbles: true });
-            realLoader.dispatchEvent(event);
-
-            console.log("Game hand-off triggered.");
-        });
-
-        // Dark Mode Logic
-        darkModeToggle.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
-            }
-        });
-
-        // Mobile Controls Toggle
-        mobileToggle.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                touchControls.classList.add('active');
-            } else {
-                touchControls.classList.remove('active');
-            }
-        });
-    </script>
 </body>
 </html>
