@@ -16,6 +16,7 @@
             --accent: #8b9bb4;
             --play-btn: #b5e4ca;
             --shadow: 0 8px 32px rgba(130, 140, 170, 0.15);
+            --svg-lines: #2d2d3a;
         }
 
         /* Dark Theme overrides */
@@ -29,13 +30,21 @@
             --accent: #7a7aff;
             --play-btn: #6fc28e;
             --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --svg-lines: #f1f1f1;
         }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: var(--bg-color); background-image: var(--bg-gradient); 
             color: var(--text-main); font-family: 'Segoe UI', sans-serif;
-            overflow: hidden; touch-action: none; transition: background 0.3s;
+            overflow: hidden; touch-action: none; 
+        }
+
+        /* Cinematic Fade Overlay */
+        #theme-fade-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000; z-index: 9999; opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease-in-out;
         }
 
         #emulator-container {
@@ -136,6 +145,8 @@
 </head>
 <body>
 
+    <div id="theme-fade-overlay"></div>
+
     <button id="menu-btn">☰</button>
 
     <div id="menu-panel">
@@ -174,22 +185,22 @@
             <h4 style="margin-bottom: 5px; border-bottom: 1px solid var(--border);">Keyboard</h4>
             <div id="key-list"></div>
             
-            <h4 style="margin-bottom: 15px; margin-top: 15px; border-bottom: 1px solid var(--border);">Gamepad Map</h4>
+            <h4 style="margin-bottom: 15px; margin-top: 15px; border-bottom: 1px solid var(--border);">Controller Diagram</h4>
             
-            <svg viewBox="0 0 300 140" style="width:100%; height:auto; background:rgba(0,0,0,0.05); border-radius:8px; margin-bottom:15px; border:1px solid var(--border);">
-                <rect x="40" y="30" width="220" height="90" rx="45" fill="var(--glass)" stroke="var(--text-main)" stroke-width="2"/>
-                <path d="M 75 65 h 12 v -12 h 10 v 12 h 12 v 10 h -12 v 12 h -10 v -12 h -12 z" fill="var(--text-main)"/>
-                <circle cx="230" cy="80" r="8" fill="var(--text-main)"/> <circle cx="250" cy="60" r="8" fill="var(--text-main)"/> <rect x="135" y="70" width="10" height="4" rx="2" fill="var(--text-main)"/>
-                <rect x="155" y="70" width="10" height="4" rx="2" fill="var(--text-main)"/>
+            <svg viewBox="0 0 300 140" style="width:100%; height:auto; background:var(--bg-color); border-radius:8px; margin-bottom:15px; border:2px solid var(--border);">
+                <rect x="40" y="30" width="220" height="90" rx="45" fill="none" stroke="var(--svg-lines)" stroke-width="3"/>
+                <path d="M 75 65 h 12 v -12 h 10 v 12 h 12 v 10 h -12 v 12 h -10 v -12 h -12 z" fill="var(--svg-lines)"/>
+                <circle cx="230" cy="80" r="8" fill="var(--svg-lines)"/> <circle cx="250" cy="60" r="8" fill="var(--svg-lines)"/> <rect x="135" y="70" width="10" height="4" rx="2" fill="var(--svg-lines)"/>
+                <rect x="155" y="70" width="10" height="4" rx="2" fill="var(--svg-lines)"/>
                 
-                <text x="50" y="20" font-size="10" fill="var(--text-main)" font-weight="bold">12 / 13 / 14 / 15</text>
-                <line x1="80" y1="25" x2="80" y2="45" stroke="var(--text-main)" stroke-dasharray="2"/>
-                <text x="135" y="55" font-size="10" fill="var(--text-main)" font-weight="bold">8   /   9</text>
-                <line x1="145" y1="58" x2="145" y2="68" stroke="var(--text-main)" stroke-dasharray="2"/>
-                <text x="260" y="45" font-size="10" fill="var(--text-main)" font-weight="bold">Btn 1 (B)</text>
-                <line x1="255" y1="50" x2="265" y2="45" stroke="var(--text-main)" stroke-dasharray="2"/>
-                <text x="215" y="115" font-size="10" fill="var(--text-main)" font-weight="bold">Btn 0 (A)</text>
-                <line x1="225" y1="105" x2="230" y2="90" stroke="var(--text-main)" stroke-dasharray="2"/>
+                <text x="50" y="20" font-size="10" fill="var(--svg-lines)" font-family="sans-serif" font-weight="bold">12 / 13 / 14 / 15</text>
+                <line x1="80" y1="25" x2="80" y2="45" stroke="var(--svg-lines)" stroke-dasharray="3,3" stroke-width="1.5"/>
+                <text x="135" y="55" font-size="10" fill="var(--svg-lines)" font-family="sans-serif" font-weight="bold">8   /   9</text>
+                <line x1="145" y1="58" x2="145" y2="68" stroke="var(--svg-lines)" stroke-dasharray="3,3" stroke-width="1.5"/>
+                <text x="255" y="45" font-size="10" fill="var(--svg-lines)" font-family="sans-serif" font-weight="bold">Btn 1 (B)</text>
+                <line x1="255" y1="50" x2="265" y2="45" stroke="var(--svg-lines)" stroke-dasharray="3,3" stroke-width="1.5"/>
+                <text x="215" y="115" font-size="10" fill="var(--svg-lines)" font-family="sans-serif" font-weight="bold">Btn 0 (A)</text>
+                <line x1="225" y1="105" x2="230" y2="90" stroke="var(--svg-lines)" stroke-dasharray="3,3" stroke-width="1.5"/>
             </svg>
 
             <div id="pad-list"></div>
