@@ -78,13 +78,25 @@ const menuBtn = document.getElementById('menu-btn');
 const menuPanel = document.getElementById('menu-panel');
 menuBtn.onclick = (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); };
 
-// Dark Mode Toggle Switch
+// Dark Mode Toggle with Cinematic Fade
 document.getElementById('toggle-dark-mode').addEventListener('change', (e) => {
-    if (e.target.checked) document.body.classList.add('dark-mode');
-    else document.body.classList.remove('dark-mode');
+    const fadeOverlay = document.getElementById('theme-fade-overlay');
+    const isChecked = e.target.checked;
+    
+    // 1. Fade to Black
+    fadeOverlay.style.opacity = '1';
+    
+    // 2. Wait for the screen to be fully black (400ms), then swap theme
+    setTimeout(() => {
+        if (isChecked) document.body.classList.add('dark-mode');
+        else document.body.classList.remove('dark-mode');
+        
+        // 3. Fade back in
+        fadeOverlay.style.opacity = '0';
+    }, 400); 
 });
 
-// Mobile UI Toggle Switch
+// Mobile UI Toggle
 document.getElementById('toggle-mobile-ui').addEventListener('change', (e) => {
     if (e.target.checked) document.getElementById('touch-controls').classList.add('active');
     else document.getElementById('touch-controls').classList.remove('active');
