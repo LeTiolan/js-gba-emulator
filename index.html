@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quartz GBA</title>
     <style>
-        /* --- THEME & STYLES --- */
+        /* --- ALL ORIGINAL STYLES RESTORED --- */
         :root {
             --bg-color: #f0f2f5;
             --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
@@ -43,7 +43,7 @@
             transition: opacity 0.4s ease-in-out;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* Menu System */
         #menu-btn {
             position: absolute; top: 20px; left: 25px; background: var(--glass); border: 1px solid var(--border);
             color: var(--text-main); font-size: 24px; cursor: pointer; z-index: 100; padding: 6px 12px; 
@@ -66,6 +66,7 @@
         .menu-item:hover { background: rgba(150,150,150,0.2); transform: translateY(-2px); }
 
         .toggle-row { display: flex; justify-content: space-between; align-items: center; cursor: default; }
+        .toggle-row:hover { transform: none; }
 
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -74,33 +75,33 @@
         input:checked + .slider { background-color: var(--play-btn); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* --- EMULATOR LAYOUT --- */
+        /* Container & Screen */
         #emulator-container {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             width: 100vw; height: 100vh; position: relative;
         }
-
         canvas {
             background-color: #000; image-rendering: pixelated;
             width: 100%; max-width: 100vmin; aspect-ratio: 3 / 2;
             box-shadow: 0 20px 60px rgba(0,0,0,0.15); border-radius: 6px;
-            z-index: 10; border: 4px solid var(--border);
+            z-index: 10; border: 4px solid var(--border); transition: border 0.3s;
         }
 
         #play-overlay { 
-            position: absolute; display: none; flex-direction: column; align-items: center; 
-            justify-content: center; width: 100%; height: 100%; z-index: 20; 
-            background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+            position: absolute; display: none; flex-direction: column; 
+            align-items: center; justify-content: center; width: 100%; height: 100%; z-index: 20; 
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
         }
         #play-overlay.active { display: flex; }
 
         .play-btn {
             background: var(--play-btn); color: #111; font-weight: bold; font-size: 16px;
-            border: none; padding: 14px 40px; border-radius: 8px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s; margin-top: 20px;
+            border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s; margin-top: 15px;
         }
+        .play-btn:hover { transform: scale(1.05); }
 
-        /* --- MODALS --- */
+        /* Modals */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0, 0.4); backdrop-filter: blur(8px);
@@ -108,24 +109,25 @@
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
-            background: var(--glass); padding: 30px; border-radius: 16px; width: 500px; max-width: 90vw;
+            background: var(--glass); padding: 30px; border-radius: 16px; width: 550px; max-width: 95vw;
             border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px);
-            max-height: 80vh; overflow-y: auto;
+            max-height: 85vh; overflow-y: auto;
         }
 
-        /* --- TOUCH CONTROLS --- */
+        /* Touch Controls */
         #touch-controls {
             position: absolute; bottom: 8%; width: 100%; max-width: 800px;
             display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 30;
         }
         #touch-controls.active { display: flex; }
-        .dpad, .action-btns { display: grid; gap: 10px; opacity: 0.6; }
-        .dpad { grid-template-columns: 60px 60px 60px; grid-template-rows: 60px 60px 60px; }
-        .action-btns { grid-template-columns: 70px 70px; align-items: end; }
+        .dpad, .action-btns { display: grid; gap: 8px; opacity: 0.6; }
+        .dpad { grid-template-columns: 55px 55px 55px; grid-template-rows: 55px 55px 55px; }
+        .action-btns { grid-template-columns: 65px 65px; align-items: end; padding-bottom: 25px;}
         .t-btn { 
             background: var(--glass); border: 1px solid var(--border); border-radius: 50%; 
-            width: 100%; height: 100%; backdrop-filter: blur(5px);
-            color: var(--text-main); font-weight: bold; display: flex; justify-content: center; align-items: center;
+            width: 100%; height: 100%; backdrop-filter: blur(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            color: var(--text-main); font-weight: bold; display: flex; justify-content: center; 
+            align-items: center; user-select: none;
         }
         .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
@@ -161,31 +163,31 @@
         <input type="file" id="romLoader" accept=".gba">
     </div>
 
+    <div class="modal-overlay" id="modal-inputs">
+        <div class="modal-content">
+            <h3 style="text-align: center;">CONTROLS</h3>
+            <div id="key-list"></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="menu-item" id="btn-reset-keys" style="background: rgba(217, 83, 79, 0.2);">Reset</button>
+                <button class="menu-item" id="btn-close-keys">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-library">
         <div class="modal-content">
-            <h3 style="text-align: center;">Collection</h3>
+            <h3 style="text-align: center;">Library</h3>
             <div id="library-list"></div>
             <button class="menu-item" id="btn-close-library" style="margin-top: 20px;">Close</button>
         </div>
     </div>
 
-    <div class="modal-overlay" id="modal-inputs">
-        <div class="modal-content">
-            <h3 style="text-align: center;">Controls</h3>
-            <div id="key-list">
-                </div>
-            <button class="menu-item" id="btn-close-keys" style="margin-top: 20px;">Save & Close</button>
-        </div>
-    </div>
-
     <div id="emulator-container">
         <div id="play-overlay">
-            <div style="font-weight: bold; letter-spacing: 1px; color: #fff; background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(5px);">Cartridge Ready</div>
+            <div style="font-weight: bold; letter-spacing: 1px; color: var(--text-main); background: var(--glass); padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);">Cartridge ready</div>
             <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
         </div>
-        
         <canvas id="screen" width="240" height="160"></canvas>
-
         <div id="touch-controls">
             <div class="dpad">
                 <div class="t-btn up" data-key="Up">↑</div>
