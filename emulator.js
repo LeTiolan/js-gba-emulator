@@ -1,12 +1,21 @@
-// --- Core Elements & State ---
+// --- Core Elements ---
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
-let emulatorState = 'IDLE'; 
-let bootProgress = 0;
 let currentRomName = "";
 let romMemory = null;
+let emulatorState = 'IDLE';
 
-// --- IndexedDB Setup ---
+// --- 1. Initialize the Real GBA Engine (IodineGBA) ---
+const Iodine = new IodineGBA();
+
+// Connect the engine to your canvas
+Iodine.attachCanvas(canvas);
+
+// Set default audio/video settings
+Iodine.enableAudio();
+Iodine.setSpeed(1.0);
+
+// --- 2. IndexedDB (Save/Load Games) ---
 let db;
 const request = indexedDB.open("GBA_Storage", 1);
 request.onupgradeneeded = (e) => {
@@ -40,42 +49,26 @@ function loadLibrary() {
     };
 }
 
-// --- Inputs ---
-let inputState = { Up: 0, Down: 0, Left: 0, Right: 0, A: 0, B: 0, Start: 0, Select: 0 };
-const keyMap = { 'ArrowUp': 'Up', 'ArrowDown': 'Down', 'ArrowLeft': 'Left', 'ArrowRight': 'Right', 'x': 'A', 'z': 'B', 'Enter': 'Start', 'Shift': 'Select' };
+// --- 3. Controls (Mapping your inputs to Iodine) ---
+const keyMap = {
+    'ArrowUp': 0, 'ArrowDown': 1, 'ArrowLeft': 2, 'ArrowRight': 3,
+    'x': 4, 'z': 5, 'Enter': 7, 'Shift': 6, 's': 8, 'a': 9 // 8=R, 9=L
+};
 
-window.addEventListener('keydown', (e) => { if(keyMap[e.key]) inputState[keyMap[e.key]] = 1; });
-window.addEventListener('keyup', (e) => { if(keyMap[e.key]) inputState[keyMap[e.key]] = 0; });
+window.addEventListener('keydown', (e) => { if(keyMap[e.key] !== undefined) Iodine.keyDown(keyMap[e.key]); });
+window.addEventListener('keyup', (e) => { if(keyMap[e.key] !== undefined) Iodine.keyUp(keyMap[e.key]); });
 
+// Touch controls bridge
 document.querySelectorAll('.t-btn').forEach(btn => {
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); inputState[btn.dataset.key] = 1; });
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); inputState[btn.dataset.key] = 0; });
+    const key = btn.dataset.key;
+    const iodineKey = { 'Up':0, 'Down':1, 'Left':2, 'Right':3, 'A':4, 'B':5 }[key];
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); Iodine.keyDown(iodineKey); });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); Iodine.keyUp(iodineKey); });
 });
 
-// --- UI Logic ---
+// --- 4. Loading Flow ---
 const menuPanel = document.getElementById('menu-panel');
 document.getElementById('menu-btn').onclick = () => menuPanel.classList.toggle('open');
-
-document.getElementById('toggle-dark-mode').onchange = (e) => {
-    const fade = document.getElementById('theme-fade-overlay');
-    fade.style.opacity = '1';
-    setTimeout(() => {
-        document.body.classList.toggle('dark-mode', e.target.checked);
-        fade.style.opacity = '0';
-    }, 400);
-};
-
-document.getElementById('toggle-mobile-ui').onchange = (e) => {
-    document.getElementById('touch-controls').classList.toggle('active', e.target.checked);
-};
-
-// Modals
-document.getElementById('btn-keybinds').onclick = () => { document.getElementById('modal-inputs').classList.add('active'); menuPanel.classList.remove('open'); };
-document.getElementById('btn-close-keys').onclick = () => document.getElementById('modal-inputs').classList.remove('active');
-document.getElementById('btn-library').onclick = () => { document.getElementById('modal-library').classList.add('active'); menuPanel.classList.remove('open'); };
-document.getElementById('btn-close-library').onclick = () => document.getElementById('modal-library').classList.remove('active');
-
-// --- Loading Flow ---
 document.getElementById('btn-load').onclick = () => document.getElementById('romLoader').click();
 
 document.getElementById('romLoader').onchange = (e) => {
@@ -95,45 +88,38 @@ function loadGameFromMemory(data, name) {
     romMemory = data; 
     currentRomName = name; 
     emulatorState = 'LOADED';
-    document.getElementById('modal-library').classList.remove('active');
     document.getElementById('play-overlay').classList.add('active');
+    document.getElementById('modal-library').classList.remove('active');
 }
 
+// --- 5. The "Press Play" Trigger ---
 document.getElementById('btn-start-game').onclick = () => {
     document.getElementById('play-overlay').classList.remove('active');
-    emulatorState = 'BOOTING'; 
-    bootProgress = 0;
+    
+    // Pass the ROM data to the real engine
+    Iodine.loadROM(romMemory);
+    Iodine.play(); 
+    
+    emulatorState = 'RUNNING';
 };
 
-// --- Rendering ---
-function renderLoop() {
+// --- 6. Visual UI Loop (Only for Idle/Boot states) ---
+function uiLoop() {
     if (emulatorState === 'IDLE' || emulatorState === 'LOADED') {
         ctx.fillStyle = document.body.classList.contains('dark-mode') ? '#121218' : '#eef2f5';
         ctx.fillRect(0, 0, 240, 160);
         ctx.fillStyle = '#8b9bb4'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(emulatorState === 'IDLE' ? 'INSERT CARTRIDGE' : 'READY TO PLAY', 120, 85);
-    } 
-    else if (emulatorState === 'BOOTING') {
-        bootProgress += 0.02;
-        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 240, 160);
-        ctx.fillStyle = '#2d2d3a'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText('QUARTZ OS', 120, 85);
-        if (bootProgress >= 1.5) { emulatorState = 'RUNNING'; startEmulatorCore(); return; }
+        ctx.fillText(emulatorState === 'IDLE' ? 'INSERT CARTRIDGE' : 'CARTRIDGE READY', 120, 85);
     }
-    if (emulatorState !== 'RUNNING') requestAnimationFrame(renderLoop);
+    
+    if (emulatorState !== 'RUNNING') requestAnimationFrame(uiLoop);
 }
-renderLoop();
+uiLoop();
 
-function startEmulatorCore() {
-    console.log("Core Started");
-    setInterval(() => {
-        // This is the "Black Screen" code. 
-        // To play real games, you would replace this block with a GBA engine (like IodineGBA).
-        ctx.fillStyle = '#050505'; 
-        ctx.fillRect(0, 0, 240, 160);
-        ctx.fillStyle = '#00ff00';
-        ctx.font = '10px monospace';
-        ctx.fillText(`RUNNING: ${currentRomName}`, 120, 70);
-        ctx.fillText(`ENGINE STATUS: PLACEHOLDER`, 120, 90);
-    }, 1000 / 60);
-}
+// Theme toggles
+document.getElementById('toggle-dark-mode').onchange = (e) => {
+    document.body.classList.toggle('dark-mode', e.target.checked);
+};
+document.getElementById('toggle-mobile-ui').onchange = (e) => {
+    document.getElementById('touch-controls').classList.toggle('active', e.target.checked);
+};
