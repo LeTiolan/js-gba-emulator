@@ -1,11 +1,11 @@
 // --- Core Elements & State ---
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
-let emulatorState = 'IDLE'; // IDLE, LOADED, BOOTING, RUNNING
+let emulatorState = 'IDLE'; 
 let bootProgress = 0;
 let currentRomName = "";
 
-// --- IndexedDB Setup (For saving ROMs & Save Data) ---
+// --- IndexedDB Setup ---
 let db;
 const request = indexedDB.open("GBA_Storage", 1);
 request.onupgradeneeded = (e) => {
@@ -24,15 +24,14 @@ function saveRomToDB(fileName, data) {
 function loadLibrary() {
     const list = document.getElementById('library-list');
     const transaction = db.transaction(["roms"], "readonly");
-    const request = transaction.objectStore("roms").getAll();
-    request.onsuccess = (e) => {
+    const req = transaction.objectStore("roms").getAll();
+    req.onsuccess = (e) => {
         const games = e.target.result;
         if (games.length === 0) { list.innerHTML = "No games saved yet."; return; }
         list.innerHTML = '';
         games.forEach(g => {
             const btn = document.createElement('button');
-            btn.className = 'menu-item';
-            btn.style.width = '100%';
+            btn.className = 'menu-item'; btn.style.width = '100%';
             btn.innerText = `🎮 ${g.name}`;
             btn.onclick = () => loadGameFromMemory(g.data, g.name);
             list.appendChild(btn);
@@ -61,8 +60,6 @@ function pollGamepad() {
     const gps = navigator.getGamepads();
     if (!gps[0]) return;
     const gp = gps[0];
-    
-    // Check mapping logic (buttons + Dpad axes fallback)
     for (const [btn, padBtnIdx] of Object.entries(padMap)) {
         if (gp.buttons[padBtnIdx]) {
             inputState[btn] = gp.buttons[padBtnIdx].pressed ? 1 : 0;
@@ -70,26 +67,35 @@ function pollGamepad() {
     }
 }
 
-// --- UI & Modals ---
+// --- Touch Controls Sync ---
+document.querySelectorAll('.t-btn').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); inputState[btn.dataset.key] = 1; });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); inputState[btn.dataset.key] = 0; });
+});
+
+// --- UI & Toggles ---
 const menuBtn = document.getElementById('menu-btn');
 const menuPanel = document.getElementById('menu-panel');
 menuBtn.onclick = (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); };
 
-// Dark Mode Toggle
-document.getElementById('btn-theme').onclick = () => {
-    document.body.classList.toggle('dark-mode');
-};
+// Dark Mode Toggle Switch
+document.getElementById('toggle-dark-mode').addEventListener('change', (e) => {
+    if (e.target.checked) document.body.classList.add('dark-mode');
+    else document.body.classList.remove('dark-mode');
+});
+
+// Mobile UI Toggle Switch
+document.getElementById('toggle-mobile-ui').addEventListener('change', (e) => {
+    if (e.target.checked) document.getElementById('touch-controls').classList.add('active');
+    else document.getElementById('touch-controls').classList.remove('active');
+});
 
 // Modals
 document.getElementById('btn-keybinds').onclick = () => { buildKeyUI(); document.getElementById('modal-inputs').classList.add('active'); menuPanel.classList.remove('open'); };
 document.getElementById('btn-close-keys').onclick = () => document.getElementById('modal-inputs').classList.remove('active');
 document.getElementById('btn-library').onclick = () => { document.getElementById('modal-library').classList.add('active'); menuPanel.classList.remove('open'); };
 document.getElementById('btn-close-library').onclick = () => document.getElementById('modal-library').classList.remove('active');
-
-document.getElementById('btn-reset-keys').onclick = () => {
-    keyMap = { ...defaultKeyMap }; padMap = { ...defaultPadMap };
-    buildKeyUI();
-};
+document.getElementById('btn-reset-keys').onclick = () => { keyMap = { ...defaultKeyMap }; padMap = { ...defaultPadMap }; buildKeyUI(); };
 
 let listeningBtn = null; let listeningType = null;
 function buildKeyUI() {
@@ -97,9 +103,7 @@ function buildKeyUI() {
     const pList = document.getElementById('pad-list'); pList.innerHTML = '';
     
     for (const btn of Object.keys(keyMap)) {
-        // Keyboard mapping
         kList.innerHTML += `<div class="key-row"><span>${btn}</span> <button class="key-btn" id="km-${btn}">${keyMap[btn]}</button></div>`;
-        // Gamepad mapping
         pList.innerHTML += `<div class="key-row"><span>${btn}</span> <button class="key-btn" id="pm-${btn}">Btn ${padMap[btn]}</button></div>`;
     }
     
@@ -109,14 +113,10 @@ function buildKeyUI() {
     }
 }
 
-// Capture Keyboard Remap
 window.addEventListener('keydown', (e) => {
-    if (listeningBtn && listeningType === 'key') {
-        keyMap[listeningBtn] = e.key; listeningBtn = null; buildKeyUI();
-    }
+    if (listeningBtn && listeningType === 'key') { keyMap[listeningBtn] = e.key; listeningBtn = null; buildKeyUI(); }
 });
 
-// Capture Gamepad Remap (Polls heavily when in menu)
 setInterval(() => {
     if (listeningBtn && listeningType === 'pad') {
         const gps = navigator.getGamepads();
@@ -127,7 +127,6 @@ setInterval(() => {
         }
     }
 }, 50);
-
 
 // --- ROM Loading & Play Flow ---
 document.getElementById('btn-load').onclick = () => { document.getElementById('romLoader').click(); menuPanel.classList.remove('open'); };
@@ -144,38 +143,17 @@ document.getElementById('romLoader').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
-let romMemory = null;
 function loadGameFromMemory(data, name) {
-    romMemory = data;
-    currentRomName = name;
-    emulatorState = 'LOADED';
+    romMemory = data; currentRomName = name; emulatorState = 'LOADED';
     document.getElementById('modal-library').classList.remove('active');
-    
-    // Show the Press Play Button Overlay
     document.getElementById('play-overlay').classList.add('active');
 }
 
-// "PRESS PLAY" Button Logic
 document.getElementById('btn-start-game').onclick = () => {
-    // 1. Enter Fullscreen natively
     document.documentElement.requestFullscreen().catch(e => console.log("Fullscreen blocked"));
-    // 2. Hide button
     document.getElementById('play-overlay').classList.remove('active');
-    // 3. Trigger Boot sequence
-    emulatorState = 'BOOTING';
-    bootProgress = 0;
+    emulatorState = 'BOOTING'; bootProgress = 0;
 };
-
-
-// --- Auto-Save Loop ---
-setInterval(() => {
-    if (emulatorState === 'RUNNING' && currentRomName) {
-        console.log(`Auto-saving data for ${currentRomName}...`);
-        // Future logic: Dump Cartridge SRAM/Flash array to IndexedDB here
-        // db.transaction(["saves"], "readwrite").objectStore("saves").put({ id: currentRomName, data: saveRamArray });
-    }
-}, 300000); // 5 minutes (300,000 ms)
-
 
 // --- Screen Rendering ---
 function renderLoop() {
@@ -191,8 +169,6 @@ function renderLoop() {
             ctx.fillStyle = `rgba(139, 155, 180, ${alpha})`;
             ctx.font = 'bold 12px "Segoe UI"'; ctx.textAlign = 'center';
             ctx.fillText('INSERT CARTRIDGE', 120, 85);
-        } else {
-            // LOADED State - Just a blank background, the HTML overlay handles the button
         }
     } 
     else if (emulatorState === 'BOOTING') {
@@ -204,9 +180,7 @@ function renderLoop() {
         } else if (bootProgress < 2.0) {
             ctx.fillStyle = `rgba(0, 0, 0, ${bootProgress - 1.0})`; ctx.fillRect(0, 0, 240, 160);
         } else {
-            emulatorState = 'RUNNING';
-            startEmulatorCore();
-            return;
+            emulatorState = 'RUNNING'; startEmulatorCore(); return;
         }
     }
 
@@ -214,7 +188,6 @@ function renderLoop() {
 }
 renderLoop();
 
-// --- Game Core Placeholder ---
 function startEmulatorCore() {
     setInterval(() => {
         ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 240, 160);
