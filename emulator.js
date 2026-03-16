@@ -12,7 +12,7 @@ let romMemory = null;
 Iodine.attachCanvas(canvas);
 Iodine.enableAudio();
 
-// --- IndexedDB Setup (Restored) ---
+// --- IndexedDB Setup (FULL RESTORE) ---
 let db;
 const request = indexedDB.open("GBA_Storage", 1);
 request.onupgradeneeded = (e) => {
@@ -50,8 +50,7 @@ function loadLibrary() {
     };
 }
 
-// --- Keybinds & Input State (Restored) ---
-// Default Iodine Key Mapping: 0:Up, 1:Down, 2:Left, 3:Right, 4:A, 5:B, 6:Select, 7:Start, 8:R, 9:L
+// --- Keybinds System (FULL RESTORE) ---
 let keyMap = { 
     'ArrowUp': 0, 'ArrowDown': 1, 'ArrowLeft': 2, 'ArrowRight': 3, 
     'x': 4, 'z': 5, 'Enter': 7, 'Shift': 6 
@@ -80,22 +79,14 @@ window.addEventListener('keyup', (e) => {
     if (keyMap[e.key] !== undefined) Iodine.keyUp(keyMap[e.key]); 
 });
 
-// Touch controls bridge
-document.querySelectorAll('.t-btn').forEach(btn => {
-    const key = btn.dataset.key;
-    const ik = { 'Up':0, 'Down':1, 'Left':2, 'Right':3, 'A':4, 'B':5 }[key];
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); Iodine.keyDown(ik); });
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); Iodine.keyUp(ik); });
-});
-
-// --- UI Logic (Restored) ---
+// --- UI Logic (FULL RESTORE) ---
 const menuPanel = document.getElementById('menu-panel');
 const playOverlay = document.getElementById('play-overlay');
 
 document.getElementById('menu-btn').onclick = () => menuPanel.classList.toggle('open');
 
+// File Loading Logic
 document.getElementById('btn-load').onclick = () => document.getElementById('romLoader').click();
-
 document.getElementById('romLoader').onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -117,13 +108,14 @@ function prepareGame(data, name) {
     playOverlay.classList.add('active');
 }
 
+// Press Play Logic
 document.getElementById('btn-start-game').onclick = () => {
     playOverlay.classList.remove('active');
     emulatorState = 'BOOTING';
     bootProgress = 0;
 };
 
-// Modal Toggles
+// Modal Handling
 document.getElementById('btn-library').onclick = () => {
     document.getElementById('modal-library').classList.add('active');
     menuPanel.classList.remove('open');
@@ -137,7 +129,7 @@ document.getElementById('btn-keybinds').onclick = () => {
 };
 document.getElementById('btn-close-keys').onclick = () => document.getElementById('modal-inputs').classList.remove('active');
 
-// Toggles
+// Settings Toggles
 document.getElementById('toggle-dark-mode').onchange = (e) => {
     document.body.classList.toggle('dark-mode', e.target.checked);
 };
@@ -145,7 +137,15 @@ document.getElementById('toggle-mobile-ui').onchange = (e) => {
     document.getElementById('touch-controls').classList.toggle('active', e.target.checked);
 };
 
-// --- Rendering Loop & Animation (Restored) ---
+// Touch Controls Implementation
+document.querySelectorAll('.t-btn').forEach(btn => {
+    const key = btn.dataset.key;
+    const ik = { 'Up':0, 'Down':1, 'Left':2, 'Right':3, 'A':4, 'B':5 }[key];
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); Iodine.keyDown(ik); });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); Iodine.keyUp(ik); });
+});
+
+// --- Animation & Rendering Loop (FULL RESTORE) ---
 function renderLoop() {
     const time = Date.now() / 1000;
     
@@ -155,25 +155,24 @@ function renderLoop() {
 
         const alpha = (Math.sin(time * 3) + 1) / 2 * 0.5 + 0.3;
         ctx.fillStyle = `rgba(139, 155, 180, ${alpha})`;
-        ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+        ctx.font = 'bold 12px "Segoe UI"'; ctx.textAlign = 'center';
         ctx.fillText(emulatorState === 'IDLE' ? 'INSERT CARTRIDGE' : 'CARTRIDGE READY', 120, 85);
     } 
     else if (emulatorState === 'BOOTING') {
         bootProgress += 0.015; 
         if (bootProgress < 1.0) {
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 240, 160);
-            ctx.fillStyle = '#2d2d3a'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#2d2d3a'; ctx.font = 'bold 20px "Segoe UI"'; ctx.textAlign = 'center';
             ctx.fillText('QUARTZ OS', 120, 85);
         } else if (bootProgress < 2.0) {
-            // Fade to black before start
             ctx.fillStyle = `rgba(0, 0, 0, ${bootProgress - 1.0})`; 
             ctx.fillRect(0, 0, 240, 160);
         } else {
-            // ACTUAL START
+            // Engine Initialization
             emulatorState = 'RUNNING';
             Iodine.loadROM(romMemory);
             Iodine.play();
-            return; 
+            return; // Stop UI loop, Iodine takes over
         }
     }
 
