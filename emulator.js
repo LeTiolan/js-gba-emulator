@@ -12,7 +12,7 @@ let romMemory = null;
 Iodine.attachCanvas(canvas);
 Iodine.enableAudio();
 
-// --- IndexedDB Setup (FULL RESTORE) ---
+// --- 1. IndexedDB Setup (Your Original Logic) ---
 let db;
 const request = indexedDB.open("GBA_Storage", 1);
 request.onupgradeneeded = (e) => {
@@ -50,27 +50,11 @@ function loadLibrary() {
     };
 }
 
-// --- Keybinds System (FULL RESTORE) ---
+// --- 2. Input Logic (Your Confirmed Key & Touch Mapping) ---
 let keyMap = { 
     'ArrowUp': 0, 'ArrowDown': 1, 'ArrowLeft': 2, 'ArrowRight': 3, 
     'x': 4, 'z': 5, 'Enter': 7, 'Shift': 6 
 };
-
-function updateKeyList() {
-    const list = document.getElementById('key-list');
-    if (!list) return;
-    list.innerHTML = '';
-    Object.keys(keyMap).forEach(key => {
-        const div = document.createElement('div');
-        div.className = 'menu-item toggle-row';
-        div.innerHTML = `<span>${key}</span> <span style="color:var(--accent)">${getGbaLabel(keyMap[key])}</span>`;
-        list.appendChild(div);
-    });
-}
-
-function getGbaLabel(id) {
-    return ["UP", "DOWN", "LEFT", "RIGHT", "A", "B", "SELECT", "START", "R", "L"][id] || "KEY";
-}
 
 window.addEventListener('keydown', (e) => { 
     if (keyMap[e.key] !== undefined) Iodine.keyDown(keyMap[e.key]); 
@@ -79,17 +63,27 @@ window.addEventListener('keyup', (e) => {
     if (keyMap[e.key] !== undefined) Iodine.keyUp(keyMap[e.key]); 
 });
 
-// --- UI Logic (FULL RESTORE) ---
+// Your working Controller Overlay bridge
+document.querySelectorAll('.t-btn').forEach(btn => {
+    const key = btn.dataset.key;
+    const ik = { 'Up':0, 'Down':1, 'Left':2, 'Right':3, 'A':4, 'B':5 }[key];
+    btn.addEventListener('touchstart', (e) => { e.preventDefault(); Iodine.keyDown(ik); });
+    btn.addEventListener('touchend', (e) => { e.preventDefault(); Iodine.keyUp(ik); });
+});
+
+// --- 3. UI & Hand-off Logic (Your Original dummyLoader Logic) ---
 const menuPanel = document.getElementById('menu-panel');
 const playOverlay = document.getElementById('play-overlay');
+const dummyLoader = document.getElementById('dummyLoader');
+const realLoader = document.getElementById('romLoader');
 
 document.getElementById('menu-btn').onclick = () => menuPanel.classList.toggle('open');
 
-// File Loading Logic
-document.getElementById('btn-load').onclick = () => document.getElementById('romLoader').click();
-document.getElementById('romLoader').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// The Hand-off logic you confirmed
+dummyLoader.addEventListener('change', () => {
+    if (!dummyLoader.files.length) return;
+    
+    const file = dummyLoader.files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
         const data = new Uint8Array(event.target.result);
@@ -98,7 +92,7 @@ document.getElementById('romLoader').onchange = (e) => {
     };
     reader.readAsArrayBuffer(file);
     menuPanel.classList.remove('open');
-};
+});
 
 function prepareGame(data, name) {
     romMemory = data;
@@ -108,28 +102,24 @@ function prepareGame(data, name) {
     playOverlay.classList.add('active');
 }
 
-// Press Play Logic
 document.getElementById('btn-start-game').onclick = () => {
     playOverlay.classList.remove('active');
     emulatorState = 'BOOTING';
     bootProgress = 0;
 };
 
-// Modal Handling
+// --- 4. Toggles & Modals ---
 document.getElementById('btn-library').onclick = () => {
     document.getElementById('modal-library').classList.add('active');
     menuPanel.classList.remove('open');
 };
 document.getElementById('btn-close-library').onclick = () => document.getElementById('modal-library').classList.remove('active');
-
 document.getElementById('btn-keybinds').onclick = () => {
-    updateKeyList();
     document.getElementById('modal-inputs').classList.add('active');
     menuPanel.classList.remove('open');
 };
 document.getElementById('btn-close-keys').onclick = () => document.getElementById('modal-inputs').classList.remove('active');
 
-// Settings Toggles
 document.getElementById('toggle-dark-mode').onchange = (e) => {
     document.body.classList.toggle('dark-mode', e.target.checked);
 };
@@ -137,15 +127,7 @@ document.getElementById('toggle-mobile-ui').onchange = (e) => {
     document.getElementById('touch-controls').classList.toggle('active', e.target.checked);
 };
 
-// Touch Controls Implementation
-document.querySelectorAll('.t-btn').forEach(btn => {
-    const key = btn.dataset.key;
-    const ik = { 'Up':0, 'Down':1, 'Left':2, 'Right':3, 'A':4, 'B':5 }[key];
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); Iodine.keyDown(ik); });
-    btn.addEventListener('touchend', (e) => { e.preventDefault(); Iodine.keyUp(ik); });
-});
-
-// --- Animation & Rendering Loop (FULL RESTORE) ---
+// --- 5. Animation Loop (Your Quartz OS Logic) ---
 function renderLoop() {
     const time = Date.now() / 1000;
     
@@ -163,16 +145,16 @@ function renderLoop() {
         if (bootProgress < 1.0) {
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 240, 160);
             ctx.fillStyle = '#2d2d3a'; ctx.font = 'bold 20px "Segoe UI"'; ctx.textAlign = 'center';
-            ctx.fillText('QUARTZ OS', 120, 85);
+            // Your original sliding text math:
+            ctx.fillText('QUARTZ OS', 120, Math.min(85, -20 + (bootProgress * 100) * 1.5));
         } else if (bootProgress < 2.0) {
             ctx.fillStyle = `rgba(0, 0, 0, ${bootProgress - 1.0})`; 
             ctx.fillRect(0, 0, 240, 160);
         } else {
-            // Engine Initialization
             emulatorState = 'RUNNING';
             Iodine.loadROM(romMemory);
             Iodine.play();
-            return; // Stop UI loop, Iodine takes over
+            return; 
         }
     }
 
