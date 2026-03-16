@@ -55,11 +55,23 @@
             width: 100%; max-width: 100vmin; aspect-ratio: 3 / 2;
             box-shadow: 0 20px 60px rgba(0,0,0,0.15); border-radius: 6px;
             z-index: 10; border: 4px solid var(--border); transition: border 0.3s;
+            display: none; /* Hide canvas initially */
         }
 
         /* The Overlay Play Button */
-        #play-overlay { position: absolute; display: none; flex-direction: column; align-items: center; z-index: 20; }
-        #play-overlay.active { display: flex; }
+        #play-overlay { 
+            position: absolute; 
+            display: flex; /* Show overlay initially */
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            z-index: 20; 
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5); /* Added slight dimming */
+            backdrop-filter: blur(5px);
+        }
+        #play-overlay.hidden { display: none; }
         .play-btn {
             background: var(--play-btn); color: #111; font-weight: bold; font-size: 16px;
             border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer;
@@ -172,11 +184,6 @@
         <input type="file" id="romLoader" accept=".gba">
     </div>
 
-    <div id="play-overlay">
-        <div style="font-weight: bold; letter-spacing: 1px; color: var(--text-main);">Cartridge entered</div>
-        <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
-    </div>
-
     <div class="modal-overlay" id="modal-inputs">
         <div class="modal-content">
             <h3 style="margin-top: 0; text-align: center; font-weight: 900; letter-spacing: 1px;">CONTROLS</h3>
@@ -212,6 +219,11 @@
     </div>
 
     <div id="emulator-container">
+        <div id="play-overlay">
+            <div style="font-weight: bold; letter-spacing: 1px; color: var(--text-main); background: var(--glass); padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);">Cartridge ready</div>
+            <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
+        </div>
+
         <canvas id="screen" width="240" height="160"></canvas>
         
         <div id="touch-controls">
@@ -229,5 +241,38 @@
     </div>
 
     <script src="emulator.js"></script>
+    <script>
+        // Logic to handle the Play button overlay and canvas reveal
+        document.getElementById('btn-start-game').addEventListener('click', function() {
+            const overlay = document.getElementById('play-overlay');
+            const canvas = document.getElementById('screen');
+            
+            // Hide the overlay
+            overlay.classList.add('hidden');
+            
+            // Show the game canvas
+            canvas.style.display = 'block';
+
+            // IMPORTANT: You will need to call the specific function from your 
+            // 'emulator.js' file that actually initializes and runs the ROM here.
+            // Example:
+            // startEmulator();
+            console.log("Play pressed. Canvas revealed. Emulator start function should be called here.");
+        });
+
+        // Basic menu toggle logic (added for completeness based on your UI)
+        document.getElementById('menu-btn').addEventListener('click', function() {
+            document.getElementById('menu-panel').classList.toggle('open');
+        });
+
+        // Basic dark mode toggle logic
+        document.getElementById('toggle-dark-mode').addEventListener('change', function(e) {
+            if(e.target.checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        });
+    </script>
 </body>
 </html>
