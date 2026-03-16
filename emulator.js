@@ -596,3 +596,95 @@ document.getElementById('select-video-filter').addEventListener('change', (e) =>
 
 // Boot the video pipeline when the script loads
 VideoCore.init();
+/* =========================================================
+   SECTION 6: SAVE STATES & MEMORY MANAGEMENT
+   ========================================================= */
+
+const MemoryManager = {
+    // 6.1 - Save / Load State (Instant Freeze-Frame)
+    saveState: function() {
+        if (!GBA_Engine.isRunning) {
+            alert("You must be running a game to save a state!");
+            return;
+        }
+        console.log(`[Memory] Saving state for ${pendingRomFile.name}...`);
+        
+        // This is where we will pull the RAM buffer from the WASM Core
+        // const stateData = GBA_Engine.core.saveState();
+        // saveToIndexedDB(stateData);
+        
+        DOM.menuPanel.classList.remove('open');
+        alert("State Saved! (Engine hook pending)");
+    },
+
+    loadState: function() {
+        if (!GBA_Engine.isRunning) {
+            alert("You must be running a game to load a state!");
+            return;
+        }
+        console.log(`[Memory] Loading state for ${pendingRomFile.name}...`);
+        
+        // This is where we will push the RAM buffer back into the WASM Core
+        // const stateData = loadFromIndexedDB();
+        // GBA_Engine.core.loadState(stateData);
+        
+        DOM.menuPanel.classList.remove('open');
+        alert("State Loaded! (Engine hook pending)");
+    },
+
+    // 6.2 - Exporting In-Game Battery Saves (.sav)
+    exportSav: function() {
+        if (!pendingRomFile) {
+            alert("Load a cartridge first to export its .sav data!");
+            return;
+        }
+        console.log("[Memory] Exporting .sav file...");
+        
+        // Dummy export logic to test the download pipeline
+        // Later, this will extract the actual SRAM array from the emulator core
+        const dummySav = new Blob(["DUMMY_SAVE_DATA"], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(dummySav);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        // Name the save file exactly after the ROM file
+        a.download = pendingRomFile.name.replace('.gba', '.sav'); 
+        a.click();
+        
+        URL.revokeObjectURL(url);
+    },
+
+    // 6.3 - Importing In-Game Battery Saves (.sav)
+    importSav: function() {
+        if (!pendingRomFile) {
+            alert("Load a cartridge first before importing a .sav file!");
+            return;
+        }
+        
+        // Generate a hidden file input on the fly to grab the .sav file
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.sav';
+        
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            console.log(`[Memory] Importing save data from ${file.name}...`);
+            
+            // This will push the file data directly into the emulator's SRAM
+            // GBA_Engine.core.loadSRAM(file);
+            
+            DOM.menuPanel.classList.remove('open');
+            alert(`Successfully imported ${file.name}! (Engine hook pending)`);
+        };
+        
+        input.click(); // Trigger the file browser
+    }
+};
+
+// 6.4 - Bind the Memory Manager to the UI Buttons
+document.getElementById('btn-save-state').addEventListener('click', () => MemoryManager.saveState());
+document.getElementById('btn-load-state').addEventListener('click', () => MemoryManager.loadState());
+document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
+document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
