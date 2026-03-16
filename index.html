@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quartz GBA</title>
     <style>
-        /* All your original CSS remains the same */
+        /* Light Theme (Quartz) */
         :root {
             --bg-color: #f0f2f5;
             --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
@@ -18,6 +18,7 @@
             --shadow: 0 8px 32px rgba(130, 140, 170, 0.15);
         }
 
+        /* Dark Theme overrides */
         body.dark-mode {
             --bg-color: #0d0d12;
             --bg-gradient: linear-gradient(135deg, #121218 0%, #0a0a0f 100%);
@@ -37,6 +38,7 @@
             overflow: hidden; touch-action: none; 
         }
 
+        /* Cinematic Fade Layer */
         #theme-fade-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: #000; z-index: 9999; opacity: 0; pointer-events: none;
@@ -55,10 +57,18 @@
             z-index: 10; border: 4px solid var(--border); transition: border 0.3s;
         }
 
+        /* The Overlay Play Button */
         #play-overlay { 
-            position: absolute; display: none; flex-direction: column; 
-            align-items: center; justify-content: center; width: 100%; height: 100%; z-index: 20; 
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+            position: absolute; 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            width: 100%; 
+            height: 100%; 
+            z-index: 20; 
+            background: rgba(0,0,0,0.2); 
+            backdrop-filter: blur(4px);
         }
         #play-overlay.active { display: flex; }
 
@@ -69,6 +79,7 @@
         }
         .play-btn:hover { transform: scale(1.05); }
 
+        /* Menus and UI */
         #menu-btn {
             position: absolute; top: 20px; left: 25px; background: var(--glass); border: 1px solid var(--border);
             color: var(--text-main); font-size: 24px; cursor: pointer; z-index: 100; padding: 6px 12px; 
@@ -85,13 +96,16 @@
         .menu-item {
             background: rgba(150,150,150,0.1); color: var(--text-main); border: 1px solid var(--border); 
             padding: 14px 18px; margin-bottom: 12px; font-size: 14px; font-weight: 600; cursor: pointer; 
-            border-radius: 10px; text-align: left; transition: all 0.2s; width: 100%;
+            border-radius: 10px; text-align: left; transition: all 0.2s;
         }
         .menu-item:hover { background: rgba(150,150,150,0.2); transform: translateY(-2px); }
         .toggle-row { display: flex; justify-content: space-between; align-items: center; cursor: default; }
         .toggle-row:hover { transform: none; }
-        #romLoader { display: none; }
+        
+        /* Hidden file inputs */
+        #romLoader, #dummyLoader { display: none; }
 
+        /* iOS Style Toggle Switch */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--text-muted); transition: .3s; border-radius: 24px; }
@@ -99,18 +113,25 @@
         input:checked + .slider { background-color: var(--play-btn); }
         input:checked + .slider:before { transform: translateX(20px); }
 
+        /* Modals */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0, 0.4); backdrop-filter: blur(8px);
             display: none; justify-content: center; align-items: center; z-index: 200;
         }
         .modal-overlay.active { display: flex; }
+        
         .modal-content {
             background: var(--glass); padding: 30px; border-radius: 16px; width: 650px; max-width: 95vw;
             border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(20px);
             max-height: 85vh; overflow-y: auto;
         }
+        
+        .action-row { display: flex; gap: 10px; margin-top: 20px; }
+        .primary-btn { background: var(--text-main); color: var(--bg-color); border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
+        .danger-btn { background: #d9534f; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; flex: 1; font-weight: bold;}
 
+        /* Mobile Touch Controls */
         #touch-controls {
             position: absolute; bottom: 8%; width: 100%; max-width: 800px;
             display: none; justify-content: space-between; padding: 0 30px; box-sizing: border-box; z-index: 30;
@@ -125,6 +146,7 @@
             color: var(--text-main); font-weight: bold; display: flex; justify-content: center; 
             align-items: center; user-select: none;
         }
+        .t-btn:active { background: #fff; transform: scale(0.95); }
         .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; }
         .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
     </style>
@@ -132,6 +154,7 @@
 <body>
 
     <div id="theme-fade-overlay"></div>
+
     <button id="menu-btn">☰</button>
 
     <div id="menu-panel">
@@ -154,26 +177,27 @@
                 <span class="slider"></span>
             </label>
         </div>
+
         <input type="file" id="romLoader" accept=".gba">
+        <input type="file" id="dummyLoader" accept=".gba">
+    </div>
+
+    <div class="modal-overlay" id="modal-library">
+        <div class="modal-content">
+            <h3 style="text-align: center;">Collection</h3>
+            <div id="library-list"></div>
+            <button class="menu-item" id="btn-close-library" style="margin-top: 20px;">Close</button>
+        </div>
     </div>
 
     <div class="modal-overlay" id="modal-inputs">
         <div class="modal-content">
             <h3 style="text-align: center;">CONTROLS</h3>
             <div id="key-list"></div>
-            <div id="pad-list"></div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="menu-item" id="btn-reset-keys" style="background: #d9534f; color: white;">Reset</button>
-                <button class="menu-item" id="btn-close-keys">Save & Close</button>
+            <div class="action-row">
+                <button class="danger-btn" id="btn-reset-keys">Reset Default</button>
+                <button class="primary-btn" id="btn-close-keys">Save & Close</button>
             </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-library">
-        <div class="modal-content">
-            <h3 style="text-align: center;">Library</h3>
-            <div id="library-list"></div>
-            <button class="menu-item" id="btn-close-library" style="margin-top: 20px;">Close</button>
         </div>
     </div>
 
@@ -182,7 +206,9 @@
             <div style="font-weight: bold; letter-spacing: 1px; color: var(--text-main); background: var(--glass); padding: 10px 20px; border-radius: 8px; backdrop-filter: blur(10px);">Cartridge ready</div>
             <button class="play-btn" id="btn-start-game">PRESS PLAY</button>
         </div>
+
         <canvas id="screen" width="240" height="160"></canvas>
+        
         <div id="touch-controls">
             <div class="dpad">
                 <div class="t-btn up" data-key="Up"></div>
@@ -197,6 +223,75 @@
         </div>
     </div>
 
+    <script src="https://tawanvhs.github.io/IodineGBA/IodineGBA/IodineGBA.js"></script>
     <script src="emulator.js"></script>
+
+    <script>
+        const menuBtn = document.getElementById('menu-btn');
+        const menuPanel = document.getElementById('menu-panel');
+        const loadBtn = document.getElementById('btn-load');
+        const dummyLoader = document.getElementById('dummyLoader');
+        const realLoader = document.getElementById('romLoader');
+        const playOverlay = document.getElementById('play-overlay');
+        const startBtn = document.getElementById('btn-start-game');
+        const darkModeToggle = document.getElementById('toggle-dark-mode');
+        const mobileToggle = document.getElementById('toggle-mobile-ui');
+        const touchControls = document.getElementById('touch-controls');
+
+        // Toggle Sidebar Menu
+        menuBtn.addEventListener('click', () => {
+            menuPanel.classList.toggle('open');
+        });
+
+        // Load Button triggers Dummy Picker
+        loadBtn.addEventListener('click', () => {
+            dummyLoader.click();
+        });
+
+        // When game is picked, show "PRESS PLAY"
+        dummyLoader.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                menuPanel.classList.remove('open');
+                playOverlay.classList.add('active');
+            }
+        });
+
+        // Press Play Logic
+        startBtn.addEventListener('click', () => {
+            if (dummyLoader.files.length === 0) return;
+
+            // 1. Hide the overlay
+            playOverlay.classList.remove('active');
+
+            // 2. Hand the file from Dummy to Real Loader
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(dummyLoader.files[0]);
+            realLoader.files = dataTransfer.files;
+
+            // 3. Trigger the emulator's 'change' event manually
+            const event = new Event('change', { bubbles: true });
+            realLoader.dispatchEvent(event);
+
+            console.log("Game hand-off triggered.");
+        });
+
+        // Dark Mode Logic
+        darkModeToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        });
+
+        // Mobile Controls Toggle
+        mobileToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                touchControls.classList.add('active');
+            } else {
+                touchControls.classList.remove('active');
+            }
+        });
+    </script>
 </body>
 </html>
