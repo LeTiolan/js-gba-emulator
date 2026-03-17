@@ -689,31 +689,43 @@ document.getElementById('btn-load-state').addEventListener('click', () => Memory
 document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
 document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
 /* =========================================================
-   SECTION 7: THE mGBA CORE INTEGRATION
+   SECTION 7: THE mGBA CORE INTEGRATION (QUARTZ OS EDITION)
    ========================================================= */
 
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Build the Loading Screen and Inject the Core
+    // 7.1 - Build the Quartz OS Loading Screen and Inject the Core
     injectCore: function() {
-        // 1. Create the Retro Loading Screen dynamically
+        // 1. Create the sleek Quartz background
         const loader = document.createElement('div');
-        loader.id = 'retro-loader';
-        loader.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#000; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; color:#39ff14; font-family:monospace; font-size:24px;";
-        loader.innerHTML = "<div id='loadingText'>LOADING ENGINE... PLEASE WAIT</div>";
-        document.body.appendChild(loader);
-
-        // 2. Create the CSS for the retro flashing button
+        loader.id = 'quartz-loader';
+        loader.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#0a0a0a; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; color:#f4f4f4; font-family: 'Segoe UI', Helvetica, sans-serif; transition: opacity 0.8s ease;";
+        
+        // 2. Create the minimalist Quartz CSS
         const style = document.createElement('style');
         style.innerHTML = `
-            @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-            .retro-btn { cursor:pointer; animation: flash 1.2s infinite; border: 3px solid #39ff14; padding: 15px 30px; background: #000; color: #39ff14; font-family: monospace; font-size: 28px; font-weight: bold; text-transform: uppercase; box-shadow: 0 0 10px #39ff14, inset 0 0 10px #39ff14; }
-            .retro-btn:hover { background: #39ff14; color: #000; animation: none; }
+            .qz-title { font-size: 22px; font-weight: 300; letter-spacing: 3px; margin-bottom: 25px; }
+            .qz-dots { display: inline-block; width: 24px; text-align: left; }
+            .qz-bar-wrapper { width: 280px; height: 1px; background: #222; position: relative; overflow: hidden; margin-bottom: 15px; }
+            .qz-bar { width: 0%; height: 100%; background: #f4f4f4; transition: width 0.1s linear; }
+            .qz-pct { font-size: 11px; font-weight: 300; letter-spacing: 2px; color: #888; }
+            .qz-btn { margin-top: 30px; padding: 12px 35px; border: 1px solid #333; background: transparent; color: #f4f4f4; font-size: 12px; letter-spacing: 3px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; animation: fadeIn 1.5s forwards; }
+            .qz-btn:hover { background: #f4f4f4; color: #0a0a0a; border-color: #f4f4f4; }
+            @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
         `;
         document.head.appendChild(style);
 
-        // 3. Fetch and Patch the Engine
+        // 3. Construct the UI elements
+        loader.innerHTML = `
+            <div id="qz-text" class="qz-title">Quartz OS<span id="qz-dots" class="qz-dots"></span></div>
+            <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
+            <div id="qz-pct" class="qz-pct">0%</div>
+            <div id="qz-action"></div>
+        `;
+        document.body.appendChild(loader);
+
+        // 4. Fetch and Patch the Engine
         fetch('core.js')
             .then(response => {
                 if (!response.ok) throw new Error("File not found");
@@ -721,44 +733,71 @@ const CoreBridge = {
             })
             .then(code => {
                 const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
-                
                 const script = document.createElement('script');
-                // FORCE the mGBA variable to be globally visible so our code can find it!
                 script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
                 document.body.appendChild(script);
                 
-                // 4. Start the polling loop to wait patiently
+                // Start the progress bar logic!
                 this.waitForEngine(loader);
             })
             .catch(err => {
-                loader.innerHTML = "<div style='color:red;'>ERROR: core.js NOT FOUND IN FOLDER</div>";
+                document.getElementById('qz-text').innerHTML = "SYSTEM ERROR: FILE MISSING";
+                document.getElementById('qz-bar').style.background = "#ff4444";
             });
     },
 
-    // 7.2 - Patiently check if the browser has finished processing
+    // 7.2 - Animate the Quartz UI while patiently waiting
     waitForEngine: function(loader) {
         let attempts = 0;
+        const maxAttempts = 150; // Gives the browser 15 solid seconds to process
+        
         const checkInterval = setInterval(() => {
             attempts++;
             
-            // If the browser finally registers the mGBA function...
+            // Pulse the dots: 1, 2, 3...
+            const dotCount = (attempts % 3) + 1;
+            const dotsEl = document.getElementById('qz-dots');
+            if (dotsEl) dotsEl.innerText = '.'.repeat(dotCount);
+            
+            // Fill the loading bar up to 99%
+            let progress = Math.min(99, Math.floor((attempts / maxAttempts) * 100));
+            document.getElementById('qz-bar').style.width = progress + '%';
+            document.getElementById('qz-pct').innerText = progress + '%';
+
+            // If the engine successfully connects!
             if (typeof window.mGBA === 'function') {
-                clearInterval(checkInterval); // Stop checking
+                clearInterval(checkInterval); 
                 
-                // IT WORKED! Change text to the flashing ENTER button
-                loader.innerHTML = "<button class='retro-btn' id='enterBtn'>[ PRESS ENTER ]</button>";
+                // Complete the UI loading sequence
+                document.getElementById('qz-bar').style.width = '100%';
+                document.getElementById('qz-pct').innerText = '100%';
+                if (dotsEl) dotsEl.innerText = '';
+                document.getElementById('qz-text').innerHTML = "SYSTEM READY";
+                
+                // Inject the sleek enter button
+                document.getElementById('qz-action').innerHTML = "<button class='qz-btn' id='enterBtn'>Initialize</button>";
                 
                 document.getElementById('enterBtn').addEventListener('click', () => {
-                    loader.style.display = 'none'; // Hide the loading screen
+                    // Smooth fade out
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 800); // Wait for the fade to finish before hiding
+                    
                     this.isCoreLoaded = true;
-                    this.linkEngine(); // Do the final wiring
+                    this.linkEngine(); 
                 });
-            } else if (attempts > 40) {
-                // If 10 seconds pass and it's STILL not there, show an error on screen
+                
+            } else if (attempts > maxAttempts) {
+                // If it STILL fails after 15 seconds, gracefully show the error
                 clearInterval(checkInterval);
-                loader.innerHTML = "<div style='color:red;'>SYSTEM FAILURE: ENGINE DID NOT BOOT</div>";
+                if (dotsEl) dotsEl.innerText = '';
+                document.getElementById('qz-text').innerHTML = "CRITICAL BOOT FAILURE";
+                document.getElementById('qz-bar').style.background = '#ff4444';
+                document.getElementById('qz-pct').innerText = 'TIMEOUT';
+                document.getElementById('qz-pct').style.color = '#ff4444';
             }
-        }, 250); // Check every quarter of a second
+        }, 100); // Updates every 100 milliseconds
     },
 
     // 7.3 - Link the Engine to our UI
@@ -774,11 +813,9 @@ const CoreBridge = {
         }).then(function(Module) {
             window.EmulatorCore = Module;
             
-            // Find the file upload button on your page
             const fileInput = document.querySelector('input[type="file"]');
             if (!fileInput) return;
 
-            // Wire the button directly to the engine
             fileInput.addEventListener('change', function(event) {
                 const file = event.target.files[0];
                 if (!file) return;
@@ -789,7 +826,6 @@ const CoreBridge = {
                     window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
                     window.EmulatorCore.callMain(['/game.gba']);
                     
-                    // Hide your main menu overlay so you can see the game!
                     if (typeof DOM !== 'undefined' && DOM.playOverlay) {
                         DOM.playOverlay.style.display = 'none';
                     }
