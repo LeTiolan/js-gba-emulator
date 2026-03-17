@@ -689,76 +689,75 @@ document.getElementById('btn-load-state').addEventListener('click', () => Memory
 document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
 document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
 /* =========================================================
-   SECTION 7: THE mGBA CORE INTEGRATION (MACRO PIXEL)
+   SECTION 7: THE mGBA CORE INTEGRATION (TRUE PIXEL & STREAMING)
    ========================================================= */
 
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Build the Massive, Pixelated Quartz Loading Screen
+    // 7.1 - Build the True Pixel Loading Screen
     injectCore: function() {
         const loader = document.createElement('div');
         loader.id = 'quartz-loader';
         
-        // The background scanlines are thicker and darker
+        // Solid black background, no soft gradients. Hard, retro scanlines.
         loader.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: #020202 linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.6)); 
-            background-size: 100% 8px; z-index: 9999; display: flex; justify-content: center; 
-            align-items: center; flex-direction: column; color: #e0e0e0; 
-            font-family: 'Courier New', Courier, monospace; 
-            -webkit-font-smoothing: none; /* Forces a rougher, pixelated look on modern screens */
+            background: #000000 linear-gradient(to bottom, transparent 50%, rgba(20,20,20,0.8) 50%); 
+            background-size: 100% 4px; z-index: 9999; display: flex; justify-content: center; 
+            align-items: center; flex-direction: column; color: #f4f4f4; 
             transition: opacity 0.8s ease;
-            animation: scanlines 10s linear infinite;
         `;
         
         const style = document.createElement('style');
+        // Import a genuine pixel font
         style.innerHTML = `
-            @keyframes scanlines { 0% { background-position: 0 0; } 100% { background-position: 0 100px; } }
+            @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
             
-            /* MASSIVE, chunky typography with hard retro drop-shadows */
-            .qz-title { font-size: 8vw; font-weight: bold; letter-spacing: 8px; margin-bottom: 20px; text-shadow: 6px 6px 0px #222; text-transform: uppercase; }
-            .qz-dots { display: inline-block; width: 8vw; text-align: left; position: relative; }
-            
-            /* Thicker, dominating progress bar */
-            .qz-bar-wrapper { width: 80vw; height: 50px; background: #0a0a0a; border: 4px solid #444; position: relative; overflow: hidden; margin-bottom: 20px; box-shadow: 8px 8px 0px #111; }
-            .qz-bar { 
-                width: 0%; height: 100%; 
-                background: linear-gradient(90deg, #777 0%, #ffffff 50%, #777 100%);
-                background-size: 200% 100%;
-                transition: width 0.1s linear; 
-                animation: shimmer 1.5s infinite linear;
+            #quartz-loader * {
+                font-family: 'VT323', monospace;
+                text-transform: uppercase;
             }
-            @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
             
-            /* Data row for Percentage and ETA */
-            .qz-data-row { width: 80vw; display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-            .qz-pct { font-size: 5vw; font-weight: bold; letter-spacing: 4px; color: #e0e0e0; text-shadow: 4px 4px 0px #222; }
-            .qz-eta { font-size: 2vw; font-weight: bold; letter-spacing: 2px; color: #888; text-align: right; margin-top: 1vw; }
+            /* Massive, hard-edged typography */
+            .qz-title-container { display: flex; align-items: baseline; margin-bottom: 2vh; }
+            .qz-title { font-size: 8vw; letter-spacing: 0.5vw; text-shadow: 4px 4px 0px #333; margin: 0; line-height: 1; }
             
-            /* Status box scaling */
-            .qz-status-box { display: flex; align-items: center; gap: 20px; background: #111; border: 2px solid #333; padding: 15px 30px; box-shadow: 6px 6px 0px #0a0a0a; }
-            .qz-spinner { 
-                width: 3vw; height: 3vw; 
-                border: 4px solid transparent; 
-                border-top-color: #e0e0e0; 
-                border-right-color: #e0e0e0;
-                border-radius: 50%; 
-                animation: spin 0.8s linear infinite; 
-            }
-            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            /* Geometric Pulsing Squares */
+            .qz-dots { display: flex; gap: 1vw; margin-left: 2vw; }
+            .qz-dot { width: 1.5vw; height: 1.5vw; background-color: #f4f4f4; opacity: 0; animation: pulseSquare 1.5s infinite step-end; box-shadow: 2px 2px 0px #333; }
+            .qz-dot:nth-child(1) { animation-delay: 0s; }
+            .qz-dot:nth-child(2) { animation-delay: 0.5s; }
+            .qz-dot:nth-child(3) { animation-delay: 1s; }
+            @keyframes pulseSquare { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
             
-            .qz-status { font-size: 2vw; letter-spacing: 3px; color: #ccc; font-weight: bold; text-transform: uppercase; }
+            /* Hard, chunky progress bar */
+            .qz-bar-wrapper { width: 80vw; height: 4vw; background: #111; border: 0.4vw solid #555; position: relative; margin-bottom: 2vh; box-shadow: 0.5vw 0.5vw 0px #222; }
+            .qz-bar { width: 0%; height: 100%; background: #f4f4f4; transition: width 0.1s linear; }
             
-            /* Gigantic Enter Button */
-            .qz-btn { margin-top: 50px; padding: 20px 60px; border: 4px solid #e0e0e0; background: #111; color: #e0e0e0; font-size: 4vw; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 6px; cursor: pointer; transition: all 0.1s; text-transform: uppercase; animation: flashBtn 2s infinite; box-shadow: 8px 8px 0px #222; }
-            .qz-btn:hover { background: #e0e0e0; color: #020202; animation: none; box-shadow: 8px 8px 0px #444; }
-            @keyframes flashBtn { 0%, 100% { border-color: #e0e0e0; color: #e0e0e0; } 50% { border-color: #555; color: #555; } }
+            /* Data row */
+            .qz-data-row { width: 80vw; display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4vh; }
+            .qz-pct { font-size: 6vw; letter-spacing: 0.2vw; color: #f4f4f4; text-shadow: 3px 3px 0px #333; line-height: 1; }
+            .qz-eta { font-size: 3vw; letter-spacing: 0.1vw; color: #aaa; text-align: right; margin-top: 1.5vw; }
+            
+            /* Status box - pure blocky design */
+            .qz-status-box { display: flex; align-items: center; gap: 2vw; background: #111; border: 0.2vw solid #444; padding: 1vw 2vw; box-shadow: 0.4vw 0.4vw 0px #222; }
+            .qz-status { font-size: 2.5vw; letter-spacing: 0.2vw; color: #ccc; }
+            
+            /* Blocky Enter Button */
+            .qz-btn { margin-top: 5vh; padding: 1.5vw 4vw; border: 0.3vw solid #f4f4f4; background: #000; color: #f4f4f4; font-size: 4vw; letter-spacing: 0.5vw; cursor: pointer; transition: all 0.1s step-end; box-shadow: 0.5vw 0.5vw 0px #333; }
+            .qz-btn:hover { background: #f4f4f4; color: #000; box-shadow: 0.5vw 0.5vw 0px #888; }
         `;
         document.head.appendChild(style);
 
         loader.innerHTML = `
-            <div id="qz-text" class="qz-title">QUARTZ_OS<span id="qz-dots" class="qz-dots"></span></div>
+            <div class="qz-title-container">
+                <div id="qz-text" class="qz-title">QUARTZ_OS</div>
+                <div class="qz-dots" id="qz-dots-container">
+                    <div class="qz-dot"></div><div class="qz-dot"></div><div class="qz-dot"></div>
+                </div>
+            </div>
+            
             <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
             
             <div class="qz-data-row">
@@ -767,99 +766,99 @@ const CoreBridge = {
             </div>
             
             <div class="qz-status-box" id="qz-status-box">
-                <div class="qz-spinner" id="qz-spinner"></div>
-                <div id="qz-status" class="qz-status">INITIATING BOOT SEQUENCE...</div>
+                <div id="qz-status" class="qz-status">ESTABLISHING CONNECTION...</div>
             </div>
             
             <div id="qz-action"></div>
         `;
         document.body.appendChild(loader);
 
-        fetch('core.js')
-            .then(response => {
-                if (!response.ok) throw new Error("File not found");
-                return response.text();
-            })
-            .then(code => {
-                const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
-                this.waitForEngine(loader);
-                setTimeout(() => {
-                    const script = document.createElement('script');
-                    script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
-                    document.body.appendChild(script);
-                }, 500);
-            })
-            .catch(err => {
-                document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
-                document.getElementById('qz-bar').style.background = "#ff3333";
-                document.getElementById('qz-bar').style.animation = "none";
-                document.getElementById('qz-status').innerText = "CORE.JS MISSING";
-                document.getElementById('qz-status').style.color = "#ff3333";
-                document.getElementById('qz-spinner').style.display = "none";
-            });
+        this.fetchCoreWithRealProgress(loader);
     },
 
-    // 7.2 - Infinite Loading Logic with ETA Countdown
-    waitForEngine: function(loader) {
-        let progress = 0;
-        let ticks = 0;
-        let estimatedSeconds = 12; // Base estimated time
-        
-        const checkInterval = setInterval(() => {
-            ticks++;
-            
-            // Chunky Dots
-            if (ticks % 6 === 0) {
-                const dotCount = ((ticks / 6) % 3) + 1;
-                const dotsEl = document.getElementById('qz-dots');
-                if (dotsEl) dotsEl.innerText = '_'.repeat(dotCount); // Using underscores for chunkier retro feel
-            }
-            
-            // ETA Countdown logic (drops 1 second every 10 ticks/1000ms)
-            if (ticks % 10 === 0 && estimatedSeconds > 1) {
-                estimatedSeconds--;
-            }
-            
-            progress += (99.9 - progress) * 0.015; 
-            let displayPct = Math.floor(progress);
-            
-            document.getElementById('qz-bar').style.width = progress + '%';
-            document.getElementById('qz-pct').innerText = displayPct + '%';
+    // 7.2 - Real-Time Streaming Download Tracking
+    fetchCoreWithRealProgress: async function(loader) {
+        try {
+            const response = await fetch('core.js');
+            if (!response.ok) throw new Error("File not found");
 
-            // Update ETA text
-            const etaEl = document.getElementById('qz-eta');
-            if (etaEl) {
-                if (displayPct < 98) {
-                    etaEl.innerText = `ETA: ~00:${estimatedSeconds.toString().padStart(2, '0')} SEC`;
-                } else {
-                    etaEl.innerText = `ETA: < 1 SEC (AWAITING CPU)`;
-                    etaEl.style.color = "#e0e0e0";
+            // Look for the file size. If running locally without headers, estimate it at 3.5MB to keep math working.
+            const contentLength = response.headers.get('content-length');
+            const totalBytes = contentLength ? parseInt(contentLength, 10) : 3500000; 
+            
+            let loadedBytes = 0;
+            const startTime = Date.now();
+            const chunks = [];
+            const reader = response.body.getReader();
+
+            // Loop through the data stream exactly as it arrives
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                chunks.push(value);
+                loadedBytes += value.length;
+                
+                // Real percentage calculation
+                let progress = Math.min(99, Math.floor((loadedBytes / totalBytes) * 100));
+                document.getElementById('qz-bar').style.width = progress + '%';
+                document.getElementById('qz-pct').innerText = progress + '%';
+                
+                // Real ETA calculation based on download speed
+                let elapsedSeconds = (Date.now() - startTime) / 1000;
+                let bytesPerSecond = loadedBytes / elapsedSeconds;
+                let remainingBytes = totalBytes - loadedBytes;
+                let etaSeconds = Math.max(0, Math.ceil(remainingBytes / bytesPerSecond));
+                
+                if (progress < 99) {
+                    document.getElementById('qz-eta').innerText = \`ETA: ~00:\${etaSeconds.toString().padStart(2, '0')} SEC\`;
+                    document.getElementById('qz-status').innerText = "DOWNLOADING ENGINE DATA";
                 }
             }
 
-            const statusEl = document.getElementById('qz-status');
-            if (statusEl) {
-                if (displayPct < 40) statusEl.innerText = "FETCHING ENGINE RESOURCES";
-                else if (displayPct < 75) statusEl.innerText = "ALLOCATING VIRTUAL MEMORY";
-                else if (displayPct < 98) statusEl.innerText = "MOUNTING FILE SYSTEM";
-                else statusEl.innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)";
+            // Once fully downloaded, assemble the file
+            document.getElementById('qz-eta').innerText = "ETA: < 1 SEC (AWAITING CPU)";
+            document.getElementById('qz-status').innerText = "ASSEMBLING CODEBLOCKS";
+            
+            let allChunks = new Uint8Array(loadedBytes);
+            let position = 0;
+            for(let chunk of chunks) {
+                allChunks.set(chunk, position);
+                position += chunk.length;
             }
+            
+            let code = new TextDecoder("utf-8").decode(allChunks);
+            const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
+            
+            // Execute the code
+            document.getElementById('qz-status').innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)";
+            const script = document.createElement('script');
+            script.textContent = safeCode + "\\nwindow.mGBA = mGBA;"; 
+            document.body.appendChild(script);
 
+            this.waitForExecution(loader);
+
+        } catch (err) {
+            document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
+            document.getElementById('qz-bar').style.background = "#ff3333";
+            document.getElementById('qz-status').innerText = "CORE.JS MISSING OR READ ERROR";
+            document.getElementById('qz-status').style.color = "#ff3333";
+            document.getElementById('qz-dots-container').style.display = "none";
+        }
+    },
+
+    // 7.3 - Wait for the CPU to finish compiling
+    waitForExecution: function(loader) {
+        const checkInterval = setInterval(() => {
             if (typeof window.mGBA === 'function') {
                 clearInterval(checkInterval); 
                 
                 document.getElementById('qz-bar').style.width = '100%';
                 document.getElementById('qz-pct').innerText = '100%';
-                if (etaEl) etaEl.innerText = "ETA: 00:00 SEC (RESOLVED)";
+                document.getElementById('qz-eta').innerText = "ETA: 00:00 SEC (RESOLVED)";
+                document.getElementById('qz-status').innerText = "SYSTEM OPTIMAL";
                 
-                if (statusEl) {
-                    statusEl.innerText = "SYSTEM OPTIMAL";
-                    statusEl.style.color = "#e0e0e0";
-                    document.getElementById('qz-spinner').style.display = "none";
-                }
-                
-                const dotsEl = document.getElementById('qz-dots');
-                if (dotsEl) dotsEl.innerText = '';
+                document.getElementById('qz-dots-container').style.display = "none";
                 document.getElementById('qz-text').innerHTML = "SYSTEM READY";
                 
                 document.getElementById('qz-action').innerHTML = "<button class='qz-btn' id='enterBtn'>[ INITIALIZE ]</button>";
@@ -871,10 +870,10 @@ const CoreBridge = {
                     this.linkEngine(); 
                 });
             }
-        }, 100); 
+        }, 100);
     },
 
-    // 7.3 - Link the Engine to our UI
+    // 7.4 - Link the Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
