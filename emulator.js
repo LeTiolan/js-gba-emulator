@@ -695,22 +695,29 @@ document.getElementById('btn-import-sav').addEventListener('click', () => Memory
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Inject the Core Library into the HTML
+    // 7.1 - Inject and Patch the Core Library
     injectCore: function() {
-        const script = document.createElement('script');
-        script.src = 'core.js'; 
-        
-        script.onload = () => {
-            alert("SUCCESS! Engine connected. Ready for games!");
-            this.isCoreLoaded = true;
-            this.linkEngine();
-        };
-        
-        script.onerror = () => {
-            alert("CORE MISSING! Check your files.");
-        };
-        
-        document.body.appendChild(script);
+        // Fetch the core.js text directly
+        fetch('core.js')
+            .then(response => {
+                if (!response.ok) throw new Error("File not found");
+                return response.text();
+            })
+            .then(code => {
+                // Scrub out the specific modern command that crashes the browser
+                const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
+                
+                const script = document.createElement('script');
+                script.textContent = safeCode;
+                document.body.appendChild(script);
+                
+                alert("SUCCESS! Engine patched and connected.");
+                this.isCoreLoaded = true;
+                this.linkEngine();
+            })
+            .catch(err => {
+                alert("CORE MISSING! Check your files.");
+            });
     },
 
     // 7.2 - Link the mGBA Engine to our UI
@@ -719,25 +726,32 @@ const CoreBridge = {
         
         if (typeof mGBA === 'function') {
             mGBA({
-                canvas: document.getElementById('screen') 
+                canvas: document.getElementById('screen'),
+                // Force the engine to look for our renamed core.wasm file!
+                locateFile: function(path) {
+                    if (path.endsWith('.wasm')) {
+                        return 'core.wasm';
+                    }
+                    return path;
+                }
             }).then(function(Module) {
                 window.EmulatorCore = Module;
                 
                 // The Diagnostic Load Sequence
                 GBA_Engine.loadRom = function(file) {
-                    alert("Step 1: File received by the code -> " + file.name);
+                    alert("Step 1: File received -> " + file.name);
                     
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        alert("Step 2: File successfully read into memory");
+                        alert("Step 2: File read into memory");
                         
                         try {
                             const romBuffer = new Uint8Array(e.target.result);
                             window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
-                            alert("Step 3: Cartridge inserted into engine's virtual memory");
+                            alert("Step 3: Cartridge inserted into engine");
                             
                             window.EmulatorCore.callMain(['/game.gba']);
-                            alert("Step 4: Power button pressed on emulator!");
+                            alert("Step 4: Power button pressed!");
                             
                             if (DOM.playOverlay) {
                                 DOM.playOverlay.style.display = 'none';
@@ -755,7 +769,7 @@ const CoreBridge = {
                 alert("ENGINE BOOT ERROR: " + err.message);
             });
         } else {
-            alert("CRASH: core.js loaded, but the 'mGBA' function is missing!");
+            alert("CRASH: The 'mGBA' function is STILL missing!");
         }
     }
 };
