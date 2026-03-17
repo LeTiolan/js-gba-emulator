@@ -697,16 +697,13 @@ const CoreBridge = {
 
     // 7.1 - Inject and Patch the Core Library
     injectCore: function() {
-        // Fetch the core.js text directly
         fetch('core.js')
             .then(response => {
                 if (!response.ok) throw new Error("File not found");
                 return response.text();
             })
             .then(code => {
-                // Scrub out the specific modern command that crashes the browser
                 const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
-                
                 const script = document.createElement('script');
                 script.textContent = safeCode;
                 document.body.appendChild(script);
@@ -727,19 +724,27 @@ const CoreBridge = {
         if (typeof mGBA === 'function') {
             mGBA({
                 canvas: document.getElementById('screen'),
-                // Force the engine to look for our renamed core.wasm file!
                 locateFile: function(path) {
-                    if (path.endsWith('.wasm')) {
-                        return 'core.wasm';
-                    }
+                    if (path.endsWith('.wasm')) return 'core.wasm';
                     return path;
                 }
             }).then(function(Module) {
                 window.EmulatorCore = Module;
                 
-                // The Diagnostic Load Sequence
-                GBA_Engine.loadRom = function(file) {
-                    alert("Step 1: File received -> " + file.name);
+                // NEW FIX: Find the file upload button on your page and hijack it!
+                const fileInput = document.querySelector('input[type="file"]');
+                
+                if (!fileInput) {
+                    alert("CRASH: I cannot find the file upload button in your HTML!");
+                    return;
+                }
+
+                // Force the button to send the game to our engine
+                fileInput.addEventListener('change', function(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    alert("Step 1: File grabbed directly from button -> " + file.name);
                     
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -753,7 +758,8 @@ const CoreBridge = {
                             window.EmulatorCore.callMain(['/game.gba']);
                             alert("Step 4: Power button pressed!");
                             
-                            if (DOM.playOverlay) {
+                            // Hide any overlays so you can see the game
+                            if (typeof DOM !== 'undefined' && DOM.playOverlay) {
                                 DOM.playOverlay.style.display = 'none';
                             }
                         } catch (err) {
@@ -763,7 +769,7 @@ const CoreBridge = {
                     
                     reader.onerror = () => alert("CRASH: Could not read the file.");
                     reader.readAsArrayBuffer(file);
-                };
+                });
                 
             }).catch(function(err) {
                 alert("ENGINE BOOT ERROR: " + err.message);
