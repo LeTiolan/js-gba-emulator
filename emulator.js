@@ -695,7 +695,7 @@ document.getElementById('btn-import-sav').addEventListener('click', () => Memory
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Inject and Patch the Core Library
+    // 7.1 - Inject and Patch the Core Library Safely
     injectCore: function() {
         fetch('core.js')
             .then(response => {
@@ -703,14 +703,28 @@ const CoreBridge = {
                 return response.text();
             })
             .then(code => {
+                // Scrub out the bad command
                 const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
-                const script = document.createElement('script');
-                script.textContent = safeCode;
-                document.body.appendChild(script);
                 
-                alert("SUCCESS! Engine patched and connected.");
-                this.isCoreLoaded = true;
-                this.linkEngine();
+                // Create a "Virtual File" so the browser loads it properly with perfect timing
+                const blob = new Blob([safeCode], { type: 'application/javascript' });
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const script = document.createElement('script');
+                script.src = blobUrl;
+                
+                // Wait PATIENTLY for the virtual file to finish loading before checking for mGBA
+                script.onload = () => {
+                    alert("SUCCESS! Engine patched and completely loaded.");
+                    this.isCoreLoaded = true;
+                    this.linkEngine();
+                };
+                
+                script.onerror = () => {
+                    alert("CRASH: Could not load the virtual core.js file.");
+                };
+                
+                document.body.appendChild(script);
             })
             .catch(err => {
                 alert("CORE MISSING! Check your files.");
@@ -731,7 +745,7 @@ const CoreBridge = {
             }).then(function(Module) {
                 window.EmulatorCore = Module;
                 
-                // NEW FIX: Find the file upload button on your page and hijack it!
+                // Find the file upload button on your page
                 const fileInput = document.querySelector('input[type="file"]');
                 
                 if (!fileInput) {
@@ -739,7 +753,7 @@ const CoreBridge = {
                     return;
                 }
 
-                // Force the button to send the game to our engine
+                // Force the button to send the game directly to our engine
                 fileInput.addEventListener('change', function(event) {
                     const file = event.target.files[0];
                     if (!file) return;
@@ -758,7 +772,7 @@ const CoreBridge = {
                             window.EmulatorCore.callMain(['/game.gba']);
                             alert("Step 4: Power button pressed!");
                             
-                            // Hide any overlays so you can see the game
+                            // Hide overlays so you can see the game!
                             if (typeof DOM !== 'undefined' && DOM.playOverlay) {
                                 DOM.playOverlay.style.display = 'none';
                             }
