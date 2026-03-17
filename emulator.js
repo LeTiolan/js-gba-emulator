@@ -695,102 +695,108 @@ document.getElementById('btn-import-sav').addEventListener('click', () => Memory
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Inject and Patch the Core Library Safely
+    // 7.1 - Build the Loading Screen and Inject the Core
     injectCore: function() {
+        // 1. Create the Retro Loading Screen dynamically
+        const loader = document.createElement('div');
+        loader.id = 'retro-loader';
+        loader.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:#000; z-index:9999; display:flex; justify-content:center; align-items:center; flex-direction:column; color:#39ff14; font-family:monospace; font-size:24px;";
+        loader.innerHTML = "<div id='loadingText'>LOADING ENGINE... PLEASE WAIT</div>";
+        document.body.appendChild(loader);
+
+        // 2. Create the CSS for the retro flashing button
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+            .retro-btn { cursor:pointer; animation: flash 1.2s infinite; border: 3px solid #39ff14; padding: 15px 30px; background: #000; color: #39ff14; font-family: monospace; font-size: 28px; font-weight: bold; text-transform: uppercase; box-shadow: 0 0 10px #39ff14, inset 0 0 10px #39ff14; }
+            .retro-btn:hover { background: #39ff14; color: #000; animation: none; }
+        `;
+        document.head.appendChild(style);
+
+        // 3. Fetch and Patch the Engine
         fetch('core.js')
             .then(response => {
                 if (!response.ok) throw new Error("File not found");
                 return response.text();
             })
             .then(code => {
-                // Scrub out the bad command
                 const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
                 
-                // Create a "Virtual File" so the browser loads it properly with perfect timing
-                const blob = new Blob([safeCode], { type: 'application/javascript' });
-                const blobUrl = URL.createObjectURL(blob);
-                
                 const script = document.createElement('script');
-                script.src = blobUrl;
-                
-                // Wait PATIENTLY for the virtual file to finish loading before checking for mGBA
-                script.onload = () => {
-                    alert("SUCCESS! Engine patched and completely loaded.");
-                    this.isCoreLoaded = true;
-                    this.linkEngine();
-                };
-                
-                script.onerror = () => {
-                    alert("CRASH: Could not load the virtual core.js file.");
-                };
-                
+                // FORCE the mGBA variable to be globally visible so our code can find it!
+                script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
                 document.body.appendChild(script);
+                
+                // 4. Start the polling loop to wait patiently
+                this.waitForEngine(loader);
             })
             .catch(err => {
-                alert("CORE MISSING! Check your files.");
+                loader.innerHTML = "<div style='color:red;'>ERROR: core.js NOT FOUND IN FOLDER</div>";
             });
     },
 
-    // 7.2 - Link the mGBA Engine to our UI
+    // 7.2 - Patiently check if the browser has finished processing
+    waitForEngine: function(loader) {
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+            attempts++;
+            
+            // If the browser finally registers the mGBA function...
+            if (typeof window.mGBA === 'function') {
+                clearInterval(checkInterval); // Stop checking
+                
+                // IT WORKED! Change text to the flashing ENTER button
+                loader.innerHTML = "<button class='retro-btn' id='enterBtn'>[ PRESS ENTER ]</button>";
+                
+                document.getElementById('enterBtn').addEventListener('click', () => {
+                    loader.style.display = 'none'; // Hide the loading screen
+                    this.isCoreLoaded = true;
+                    this.linkEngine(); // Do the final wiring
+                });
+            } else if (attempts > 40) {
+                // If 10 seconds pass and it's STILL not there, show an error on screen
+                clearInterval(checkInterval);
+                loader.innerHTML = "<div style='color:red;'>SYSTEM FAILURE: ENGINE DID NOT BOOT</div>";
+            }
+        }, 250); // Check every quarter of a second
+    },
+
+    // 7.3 - Link the Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
-        if (typeof mGBA === 'function') {
-            mGBA({
-                canvas: document.getElementById('screen'),
-                locateFile: function(path) {
-                    if (path.endsWith('.wasm')) return 'core.wasm';
-                    return path;
-                }
-            }).then(function(Module) {
-                window.EmulatorCore = Module;
-                
-                // Find the file upload button on your page
-                const fileInput = document.querySelector('input[type="file"]');
-                
-                if (!fileInput) {
-                    alert("CRASH: I cannot find the file upload button in your HTML!");
-                    return;
-                }
+        window.mGBA({
+            canvas: document.getElementById('screen'),
+            locateFile: function(path) {
+                if (path.endsWith('.wasm')) return 'core.wasm';
+                return path;
+            }
+        }).then(function(Module) {
+            window.EmulatorCore = Module;
+            
+            // Find the file upload button on your page
+            const fileInput = document.querySelector('input[type="file"]');
+            if (!fileInput) return;
 
-                // Force the button to send the game directly to our engine
-                fileInput.addEventListener('change', function(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-
-                    alert("Step 1: File grabbed directly from button -> " + file.name);
-                    
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        alert("Step 2: File read into memory");
-                        
-                        try {
-                            const romBuffer = new Uint8Array(e.target.result);
-                            window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
-                            alert("Step 3: Cartridge inserted into engine");
-                            
-                            window.EmulatorCore.callMain(['/game.gba']);
-                            alert("Step 4: Power button pressed!");
-                            
-                            // Hide overlays so you can see the game!
-                            if (typeof DOM !== 'undefined' && DOM.playOverlay) {
-                                DOM.playOverlay.style.display = 'none';
-                            }
-                        } catch (err) {
-                            alert("CRASH DETECTED: " + err.message);
-                        }
-                    };
-                    
-                    reader.onerror = () => alert("CRASH: Could not read the file.");
-                    reader.readAsArrayBuffer(file);
-                });
+            // Wire the button directly to the engine
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
                 
-            }).catch(function(err) {
-                alert("ENGINE BOOT ERROR: " + err.message);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const romBuffer = new Uint8Array(e.target.result);
+                    window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
+                    window.EmulatorCore.callMain(['/game.gba']);
+                    
+                    // Hide your main menu overlay so you can see the game!
+                    if (typeof DOM !== 'undefined' && DOM.playOverlay) {
+                        DOM.playOverlay.style.display = 'none';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
             });
-        } else {
-            alert("CRASH: The 'mGBA' function is STILL missing!");
-        }
+        });
     }
 };
 
