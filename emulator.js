@@ -775,32 +775,42 @@ const CoreBridge = {
         `;
         document.body.appendChild(loader);
 
-        // Reverted to the stable, full-file fetch
+     // 7.1 - Load mGBA Core (Bypassing strict module security)
         fetch('core.js')
             .then(response => {
                 if (!response.ok) throw new Error("File not found");
                 return response.text();
             })
             .then(code => {
-              const safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
+                // 1. Fix the relative URL trap
+                let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
                 
+                // 2. Nuke ALL export keywords so the Worker threads don't crash
+                safeCode = safeCode.replace(/export\s+default.*/g, '');
+                safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
+
+                // 3. Package this clean code into a virtual file (Blob) for the engine to use
+                const blob = new Blob([safeCode], { type: 'application/javascript' });
+                window.coreBlobUrl = URL.createObjectURL(blob);
+                
+                // 4. Trigger your custom loading UI
                 this.waitForEngine(loader);
 
-           setTimeout(() => {
+                setTimeout(() => {
                     const script = document.createElement('script');
-                    script.type = 'module'; // <--- THIS IS THE FIX
+                    script.type = 'module'; 
                     script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
                     document.body.appendChild(script);
                 }, 500);
             })
             .catch(err => {
+                // Your custom error screen logic!
                 document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
                 document.getElementById('qz-bar').style.background = "#ff3333";
                 document.getElementById('qz-status').innerText = "CORE MISSING";
                 document.getElementById('qz-status').style.color = "#ff3333";
                 document.getElementById('qz-dots-container').style.display = "none";
             });
-    },
 
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
@@ -871,16 +881,15 @@ const CoreBridge = {
         }, 100); 
     },
 
- // 7.3 - Link the Engine to our UI
+// 7.3 - Link the Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
         window.mGBA({
             canvas: document.getElementById('screen'),
-            mainScriptUrlOrBlob: 'core.js', // <--- ADD THIS LINE
+            mainScriptUrlOrBlob: window.coreBlobUrl, // <--- This is the magic new line!
             locateFile: function(path) {
                 if (path.endsWith('.wasm')) return 'core.wasm';
-                if (path.endsWith('.worker.js')) return 'core.worker.js'; // <--- ADD THIS LINE
                 return path;
             }
         }).then(function(Module) {
