@@ -888,9 +888,12 @@ const CoreBridge = {
         
         window.mGBA({
             canvas: document.getElementById('screen'),
-            mainScriptUrlOrBlob: window.coreBlobUrl, // <--- This is the magic new line!
+            mainScriptUrlOrBlob: window.coreBlobUrl, 
             locateFile: function(path) {
-                if (path.endsWith('.wasm')) return 'core.wasm';
+                if (path.endsWith('.wasm')) {
+                    // Force the engine to look at the real website, not the virtual Blob folder
+                    return new URL('core.wasm', window.location.href).href;
+                }
                 return path;
             }
         }).then(function(Module) {
@@ -915,8 +918,12 @@ const CoreBridge = {
                 };
                 reader.readAsArrayBuffer(file);
             });
+        }).catch(function(err) {
+            // Print the exact error to the screen since we don't have a console!
+            const statusEl = document.getElementById('qz-status');
+            if (statusEl) {
+                statusEl.innerText = "CRASH: " + err.message;
+                statusEl.style.color = "#ff3333";
+            }
         });
     }
-};
-
-CoreBridge.injectCore();
