@@ -786,8 +786,9 @@ const CoreBridge = {
                 
                 this.waitForEngine(loader);
 
-                setTimeout(() => {
+           setTimeout(() => {
                     const script = document.createElement('script');
+                    script.type = 'module'; // <--- THIS IS THE FIX
                     script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
                     document.body.appendChild(script);
                 }, 500);
