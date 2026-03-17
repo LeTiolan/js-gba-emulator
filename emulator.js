@@ -811,6 +811,7 @@ const CoreBridge = {
                 document.getElementById('qz-status').style.color = "#ff3333";
                 document.getElementById('qz-dots-container').style.display = "none";
             });
+       },
 
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
