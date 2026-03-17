@@ -689,24 +689,26 @@ document.getElementById('btn-load-state').addEventListener('click', () => Memory
 document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
 document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
 /* =========================================================
-   SECTION 7: THE mGBA CORE INTEGRATION (QUARTZ OS V4)
+   SECTION 7: THE mGBA CORE INTEGRATION (MACRO PIXEL)
    ========================================================= */
 
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Build the GPU-Accelerated Quartz Loading Screen
+    // 7.1 - Build the Massive, Pixelated Quartz Loading Screen
     injectCore: function() {
         const loader = document.createElement('div');
         loader.id = 'quartz-loader';
         
-        // Added animated drifting scanlines
+        // The background scanlines are thicker and darker
         loader.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: #050505 linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.3)); 
-            background-size: 100% 4px; z-index: 9999; display: flex; justify-content: center; 
+            background: #020202 linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.6)); 
+            background-size: 100% 8px; z-index: 9999; display: flex; justify-content: center; 
             align-items: center; flex-direction: column; color: #e0e0e0; 
-            font-family: 'Courier New', Courier, monospace; transition: opacity 0.8s ease;
+            font-family: 'Courier New', Courier, monospace; 
+            -webkit-font-smoothing: none; /* Forces a rougher, pixelated look on modern screens */
+            transition: opacity 0.8s ease;
             animation: scanlines 10s linear infinite;
         `;
         
@@ -714,29 +716,31 @@ const CoreBridge = {
         style.innerHTML = `
             @keyframes scanlines { 0% { background-position: 0 0; } 100% { background-position: 0 100px; } }
             
-            .qz-title { font-size: 4vw; font-weight: bold; letter-spacing: 4px; margin-bottom: 30px; text-shadow: 0 0 15px rgba(224,224,224,0.3); }
-            .qz-dots { display: inline-block; width: 6vw; text-align: left; font-size: 1.5em; line-height: 0; position: relative; top: 5px; }
+            /* MASSIVE, chunky typography with hard retro drop-shadows */
+            .qz-title { font-size: 8vw; font-weight: bold; letter-spacing: 8px; margin-bottom: 20px; text-shadow: 6px 6px 0px #222; text-transform: uppercase; }
+            .qz-dots { display: inline-block; width: 8vw; text-align: left; position: relative; }
             
-            .qz-bar-wrapper { width: 60vw; height: 16px; background: #111; border: 2px solid #333; position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.9) inset; }
-            
-            /* NEW: GPU-Accelerated Shimmering Progress Bar */
+            /* Thicker, dominating progress bar */
+            .qz-bar-wrapper { width: 80vw; height: 50px; background: #0a0a0a; border: 4px solid #444; position: relative; overflow: hidden; margin-bottom: 20px; box-shadow: 8px 8px 0px #111; }
             .qz-bar { 
                 width: 0%; height: 100%; 
-                background: linear-gradient(90deg, #999 0%, #ffffff 50%, #999 100%);
+                background: linear-gradient(90deg, #777 0%, #ffffff 50%, #777 100%);
                 background-size: 200% 100%;
                 transition: width 0.1s linear; 
-                box-shadow: 0 0 15px #e0e0e0;
                 animation: shimmer 1.5s infinite linear;
             }
             @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
             
-            .qz-pct { font-size: 2.5vw; font-weight: bold; letter-spacing: 3px; color: #a0a0a0; margin-bottom: 25px; }
+            /* Data row for Percentage and ETA */
+            .qz-data-row { width: 80vw; display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+            .qz-pct { font-size: 5vw; font-weight: bold; letter-spacing: 4px; color: #e0e0e0; text-shadow: 4px 4px 0px #222; }
+            .qz-eta { font-size: 2vw; font-weight: bold; letter-spacing: 2px; color: #888; text-align: right; margin-top: 1vw; }
             
-            /* NEW: The Spinning Core and Status Layout */
-            .qz-status-box { display: flex; align-items: center; gap: 15px; }
+            /* Status box scaling */
+            .qz-status-box { display: flex; align-items: center; gap: 20px; background: #111; border: 2px solid #333; padding: 15px 30px; box-shadow: 6px 6px 0px #0a0a0a; }
             .qz-spinner { 
-                width: 1.5vw; height: 1.5vw; 
-                border: 2px solid transparent; 
+                width: 3vw; height: 3vw; 
+                border: 4px solid transparent; 
                 border-top-color: #e0e0e0; 
                 border-right-color: #e0e0e0;
                 border-radius: 50%; 
@@ -744,18 +748,23 @@ const CoreBridge = {
             }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
             
-            .qz-status { font-size: 1.2vw; letter-spacing: 2px; color: #aaa; font-weight: bold; }
+            .qz-status { font-size: 2vw; letter-spacing: 3px; color: #ccc; font-weight: bold; text-transform: uppercase; }
             
-            .qz-btn { margin-top: 40px; padding: 15px 50px; border: 2px solid #e0e0e0; background: rgba(224,224,224,0.1); color: #e0e0e0; font-size: 2vw; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 5px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; animation: fadeIn 1.5s forwards; box-shadow: 0 0 15px rgba(224,224,224,0.2); }
-            .qz-btn:hover { background: #e0e0e0; color: #050505; box-shadow: 0 0 25px rgba(224,224,224,0.6); }
-            @keyframes fadeIn { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+            /* Gigantic Enter Button */
+            .qz-btn { margin-top: 50px; padding: 20px 60px; border: 4px solid #e0e0e0; background: #111; color: #e0e0e0; font-size: 4vw; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 6px; cursor: pointer; transition: all 0.1s; text-transform: uppercase; animation: flashBtn 2s infinite; box-shadow: 8px 8px 0px #222; }
+            .qz-btn:hover { background: #e0e0e0; color: #020202; animation: none; box-shadow: 8px 8px 0px #444; }
+            @keyframes flashBtn { 0%, 100% { border-color: #e0e0e0; color: #e0e0e0; } 50% { border-color: #555; color: #555; } }
         `;
         document.head.appendChild(style);
 
         loader.innerHTML = `
-            <div id="qz-text" class="qz-title">Quartz OS<span id="qz-dots" class="qz-dots"></span></div>
+            <div id="qz-text" class="qz-title">QUARTZ_OS<span id="qz-dots" class="qz-dots"></span></div>
             <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
-            <div id="qz-pct" class="qz-pct">0%</div>
+            
+            <div class="qz-data-row">
+                <div id="qz-pct" class="qz-pct">0%</div>
+                <div id="qz-eta" class="qz-eta">ETA: CALCULATING...</div>
+            </div>
             
             <div class="qz-status-box" id="qz-status-box">
                 <div class="qz-spinner" id="qz-spinner"></div>
@@ -781,27 +790,34 @@ const CoreBridge = {
                 }, 500);
             })
             .catch(err => {
-                document.getElementById('qz-text').innerHTML = "SYSTEM ERROR: FILE MISSING";
-                document.getElementById('qz-bar').style.background = "#ff4444";
+                document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
+                document.getElementById('qz-bar').style.background = "#ff3333";
                 document.getElementById('qz-bar').style.animation = "none";
-                document.getElementById('qz-status').innerText = "FATAL ERROR";
-                document.getElementById('qz-status').style.color = "#ff4444";
+                document.getElementById('qz-status').innerText = "CORE.JS MISSING";
+                document.getElementById('qz-status').style.color = "#ff3333";
                 document.getElementById('qz-spinner').style.display = "none";
             });
     },
 
-    // 7.2 - Infinite Loading Logic with Status Updates
+    // 7.2 - Infinite Loading Logic with ETA Countdown
     waitForEngine: function(loader) {
         let progress = 0;
         let ticks = 0;
+        let estimatedSeconds = 12; // Base estimated time
         
         const checkInterval = setInterval(() => {
             ticks++;
             
+            // Chunky Dots
             if (ticks % 6 === 0) {
                 const dotCount = ((ticks / 6) % 3) + 1;
                 const dotsEl = document.getElementById('qz-dots');
-                if (dotsEl) dotsEl.innerText = '.'.repeat(dotCount);
+                if (dotsEl) dotsEl.innerText = '_'.repeat(dotCount); // Using underscores for chunkier retro feel
+            }
+            
+            // ETA Countdown logic (drops 1 second every 10 ticks/1000ms)
+            if (ticks % 10 === 0 && estimatedSeconds > 1) {
+                estimatedSeconds--;
             }
             
             progress += (99.9 - progress) * 0.015; 
@@ -810,12 +826,23 @@ const CoreBridge = {
             document.getElementById('qz-bar').style.width = progress + '%';
             document.getElementById('qz-pct').innerText = displayPct + '%';
 
+            // Update ETA text
+            const etaEl = document.getElementById('qz-eta');
+            if (etaEl) {
+                if (displayPct < 98) {
+                    etaEl.innerText = `ETA: ~00:${estimatedSeconds.toString().padStart(2, '0')} SEC`;
+                } else {
+                    etaEl.innerText = `ETA: < 1 SEC (AWAITING CPU)`;
+                    etaEl.style.color = "#e0e0e0";
+                }
+            }
+
             const statusEl = document.getElementById('qz-status');
             if (statusEl) {
-                if (displayPct < 40) statusEl.innerText = "FETCHING ENGINE RESOURCES...";
-                else if (displayPct < 75) statusEl.innerText = "ALLOCATING VIRTUAL MEMORY...";
-                else if (displayPct < 98) statusEl.innerText = "MOUNTING FILE SYSTEM...";
-                else statusEl.innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)...";
+                if (displayPct < 40) statusEl.innerText = "FETCHING ENGINE RESOURCES";
+                else if (displayPct < 75) statusEl.innerText = "ALLOCATING VIRTUAL MEMORY";
+                else if (displayPct < 98) statusEl.innerText = "MOUNTING FILE SYSTEM";
+                else statusEl.innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)";
             }
 
             if (typeof window.mGBA === 'function') {
@@ -823,19 +850,19 @@ const CoreBridge = {
                 
                 document.getElementById('qz-bar').style.width = '100%';
                 document.getElementById('qz-pct').innerText = '100%';
-                document.getElementById('qz-pct').style.color = '#e0e0e0';
+                if (etaEl) etaEl.innerText = "ETA: 00:00 SEC (RESOLVED)";
                 
                 if (statusEl) {
                     statusEl.innerText = "SYSTEM OPTIMAL";
                     statusEl.style.color = "#e0e0e0";
-                    document.getElementById('qz-spinner').style.display = "none"; // Hide spinner when done
+                    document.getElementById('qz-spinner').style.display = "none";
                 }
                 
                 const dotsEl = document.getElementById('qz-dots');
                 if (dotsEl) dotsEl.innerText = '';
                 document.getElementById('qz-text').innerHTML = "SYSTEM READY";
                 
-                document.getElementById('qz-action').innerHTML = "<button class='qz-btn' id='enterBtn'>Initialize</button>";
+                document.getElementById('qz-action').innerHTML = "<button class='qz-btn' id='enterBtn'>[ INITIALIZE ]</button>";
                 
                 document.getElementById('enterBtn').addEventListener('click', () => {
                     loader.style.opacity = '0';
