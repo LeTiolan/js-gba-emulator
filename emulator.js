@@ -717,36 +717,45 @@ const CoreBridge = {
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
-        // Start up the specific mGBA WebAssembly engine
         if (typeof mGBA === 'function') {
             mGBA({
-                // Tell the engine to draw exactly onto your specific screen canvas
                 canvas: document.getElementById('screen') 
             }).then(function(Module) {
-                
-                // The engine is fully booted up and ready
                 window.EmulatorCore = Module;
                 
-                // Override our placeholder logic with the exact mGBA loading sequence
+                // The Diagnostic Load Sequence
                 GBA_Engine.loadRom = function(file) {
+                    alert("Step 1: File received by the code -> " + file.name);
+                    
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        const romBuffer = new Uint8Array(e.target.result);
+                        alert("Step 2: File successfully read into memory");
                         
-                        // 1. Create a virtual Nintendo cartridge in the engine's memory
-                        window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
-                        
-                        // 2. Tell mGBA to boot that exact cartridge
-                        window.EmulatorCore.callMain(['/game.gba']);
-                        
-                        // 3. Hide the Play Overlay automatically so you can see the game!
-                        if (DOM.playOverlay) {
-                            DOM.playOverlay.style.display = 'none';
+                        try {
+                            const romBuffer = new Uint8Array(e.target.result);
+                            window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
+                            alert("Step 3: Cartridge inserted into engine's virtual memory");
+                            
+                            window.EmulatorCore.callMain(['/game.gba']);
+                            alert("Step 4: Power button pressed on emulator!");
+                            
+                            if (DOM.playOverlay) {
+                                DOM.playOverlay.style.display = 'none';
+                            }
+                        } catch (err) {
+                            alert("CRASH DETECTED: " + err.message);
                         }
                     };
+                    
+                    reader.onerror = () => alert("CRASH: Could not read the file.");
                     reader.readAsArrayBuffer(file);
                 };
+                
+            }).catch(function(err) {
+                alert("ENGINE BOOT ERROR: " + err.message);
             });
+        } else {
+            alert("CRASH: core.js loaded, but the 'mGBA' function is missing!");
         }
     }
 };
