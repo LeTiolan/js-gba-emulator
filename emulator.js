@@ -689,7 +689,7 @@ document.getElementById('btn-load-state').addEventListener('click', () => Memory
 document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
 document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
 /* =========================================================
-   SECTION 7: THE mGBA CORE INTEGRATION (TRUE PIXEL & STREAMING)
+   SECTION 7: THE mGBA CORE INTEGRATION (STABLE PIXEL)
    ========================================================= */
 
 const CoreBridge = {
@@ -700,7 +700,7 @@ const CoreBridge = {
         const loader = document.createElement('div');
         loader.id = 'quartz-loader';
         
-        // Solid black background, no soft gradients. Hard, retro scanlines.
+        // Solid black background, hard retro scanlines
         loader.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
             background: #000000 linear-gradient(to bottom, transparent 50%, rgba(20,20,20,0.8) 50%); 
@@ -710,16 +710,11 @@ const CoreBridge = {
         `;
         
         const style = document.createElement('style');
-        // Import a genuine pixel font
         style.innerHTML = `
             @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
             
-            #quartz-loader * {
-                font-family: 'VT323', monospace;
-                text-transform: uppercase;
-            }
+            #quartz-loader * { font-family: 'VT323', monospace; text-transform: uppercase; }
             
-            /* Massive, hard-edged typography */
             .qz-title-container { display: flex; align-items: baseline; margin-bottom: 2vh; }
             .qz-title { font-size: 8vw; letter-spacing: 0.5vw; text-shadow: 4px 4px 0px #333; margin: 0; line-height: 1; }
             
@@ -731,20 +726,16 @@ const CoreBridge = {
             .qz-dot:nth-child(3) { animation-delay: 1s; }
             @keyframes pulseSquare { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
             
-            /* Hard, chunky progress bar */
             .qz-bar-wrapper { width: 80vw; height: 4vw; background: #111; border: 0.4vw solid #555; position: relative; margin-bottom: 2vh; box-shadow: 0.5vw 0.5vw 0px #222; }
             .qz-bar { width: 0%; height: 100%; background: #f4f4f4; transition: width 0.1s linear; }
             
-            /* Data row */
             .qz-data-row { width: 80vw; display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4vh; }
             .qz-pct { font-size: 6vw; letter-spacing: 0.2vw; color: #f4f4f4; text-shadow: 3px 3px 0px #333; line-height: 1; }
             .qz-eta { font-size: 3vw; letter-spacing: 0.1vw; color: #aaa; text-align: right; margin-top: 1.5vw; }
             
-            /* Status box - pure blocky design */
             .qz-status-box { display: flex; align-items: center; gap: 2vw; background: #111; border: 0.2vw solid #444; padding: 1vw 2vw; box-shadow: 0.4vw 0.4vw 0px #222; }
             .qz-status { font-size: 2.5vw; letter-spacing: 0.2vw; color: #ccc; }
             
-            /* Blocky Enter Button */
             .qz-btn { margin-top: 5vh; padding: 1.5vw 4vw; border: 0.3vw solid #f4f4f4; background: #000; color: #f4f4f4; font-size: 4vw; letter-spacing: 0.5vw; cursor: pointer; transition: all 0.1s step-end; box-shadow: 0.5vw 0.5vw 0px #333; }
             .qz-btn:hover { background: #f4f4f4; color: #000; box-shadow: 0.5vw 0.5vw 0px #888; }
         `;
@@ -757,106 +748,94 @@ const CoreBridge = {
                     <div class="qz-dot"></div><div class="qz-dot"></div><div class="qz-dot"></div>
                 </div>
             </div>
-            
             <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
-            
             <div class="qz-data-row">
                 <div id="qz-pct" class="qz-pct">0%</div>
                 <div id="qz-eta" class="qz-eta">ETA: CALCULATING...</div>
             </div>
-            
             <div class="qz-status-box" id="qz-status-box">
                 <div id="qz-status" class="qz-status">ESTABLISHING CONNECTION...</div>
             </div>
-            
             <div id="qz-action"></div>
         `;
         document.body.appendChild(loader);
 
-        this.fetchCoreWithRealProgress(loader);
+        // Reverted to the stable, full-file fetch
+        fetch('core.js')
+            .then(response => {
+                if (!response.ok) throw new Error("File not found");
+                return response.text();
+            })
+            .then(code => {
+                const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
+                
+                this.waitForEngine(loader);
+
+                setTimeout(() => {
+                    const script = document.createElement('script');
+                    script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
+                    document.body.appendChild(script);
+                }, 500);
+            })
+            .catch(err => {
+                document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
+                document.getElementById('qz-bar').style.background = "#ff3333";
+                document.getElementById('qz-status').innerText = "CORE MISSING";
+                document.getElementById('qz-status').style.color = "#ff3333";
+                document.getElementById('qz-dots-container').style.display = "none";
+            });
     },
 
-    // 7.2 - Real-Time Streaming Download Tracking
-    fetchCoreWithRealProgress: async function(loader) {
-        try {
-            const response = await fetch('core.js');
-            if (!response.ok) throw new Error("File not found");
-
-            // Look for the file size. If running locally without headers, estimate it at 3.5MB to keep math working.
-            const contentLength = response.headers.get('content-length');
-            const totalBytes = contentLength ? parseInt(contentLength, 10) : 3500000; 
+    // 7.2 - Stable UI Update Logic
+    waitForEngine: function(loader) {
+        let progress = 0;
+        let ticks = 0;
+        let estimatedSeconds = 12; 
+        
+        const checkInterval = setInterval(() => {
+            ticks++;
             
-            let loadedBytes = 0;
-            const startTime = Date.now();
-            const chunks = [];
-            const reader = response.body.getReader();
+            if (ticks % 10 === 0 && estimatedSeconds > 1) {
+                estimatedSeconds--;
+            }
+            
+            progress += (99.9 - progress) * 0.015; 
+            let displayPct = Math.floor(progress);
+            
+            document.getElementById('qz-bar').style.width = progress + '%';
+            document.getElementById('qz-pct').innerText = displayPct + '%';
 
-            // Loop through the data stream exactly as it arrives
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                chunks.push(value);
-                loadedBytes += value.length;
-                
-                // Real percentage calculation
-                let progress = Math.min(99, Math.floor((loadedBytes / totalBytes) * 100));
-                document.getElementById('qz-bar').style.width = progress + '%';
-                document.getElementById('qz-pct').innerText = progress + '%';
-                
-                // Real ETA calculation based on download speed
-                let elapsedSeconds = (Date.now() - startTime) / 1000;
-                let bytesPerSecond = loadedBytes / elapsedSeconds;
-                let remainingBytes = totalBytes - loadedBytes;
-                let etaSeconds = Math.max(0, Math.ceil(remainingBytes / bytesPerSecond));
-                
-                if (progress < 99) {
-                    document.getElementById('qz-eta').innerText = \`ETA: ~00:\${etaSeconds.toString().padStart(2, '0')} SEC\`;
-                    document.getElementById('qz-status').innerText = "DOWNLOADING ENGINE DATA";
+            const etaEl = document.getElementById('qz-eta');
+            const statusEl = document.getElementById('qz-status');
+
+            if (etaEl) {
+                if (displayPct < 98) {
+                    etaEl.innerText = `ETA: ~00:${estimatedSeconds.toString().padStart(2, '0')} SEC`;
+                } else {
+                    etaEl.innerText = `ETA: < 1 SEC (AWAITING CPU)`;
+                    etaEl.style.color = "#f4f4f4";
                 }
             }
 
-            // Once fully downloaded, assemble the file
-            document.getElementById('qz-eta').innerText = "ETA: < 1 SEC (AWAITING CPU)";
-            document.getElementById('qz-status').innerText = "ASSEMBLING CODEBLOCKS";
-            
-            let allChunks = new Uint8Array(loadedBytes);
-            let position = 0;
-            for(let chunk of chunks) {
-                allChunks.set(chunk, position);
-                position += chunk.length;
+            if (statusEl) {
+                if (displayPct < 40) statusEl.innerText = "DOWNLOADING ENGINE DATA";
+                else if (displayPct < 75) statusEl.innerText = "ASSEMBLING CODEBLOCKS";
+                else if (displayPct < 98) statusEl.innerText = "MOUNTING FILE SYSTEM";
+                else statusEl.innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)";
             }
-            
-            let code = new TextDecoder("utf-8").decode(allChunks);
-            const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
-            
-            // Execute the code
-            document.getElementById('qz-status').innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)";
-            const script = document.createElement('script');
-            script.textContent = safeCode + "\\nwindow.mGBA = mGBA;"; 
-            document.body.appendChild(script);
 
-            this.waitForExecution(loader);
-
-        } catch (err) {
-            document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
-            document.getElementById('qz-bar').style.background = "#ff3333";
-            document.getElementById('qz-status').innerText = "CORE.JS MISSING OR READ ERROR";
-            document.getElementById('qz-status').style.color = "#ff3333";
-            document.getElementById('qz-dots-container').style.display = "none";
-        }
-    },
-
-    // 7.3 - Wait for the CPU to finish compiling
-    waitForExecution: function(loader) {
-        const checkInterval = setInterval(() => {
+            // Engine completely loaded
             if (typeof window.mGBA === 'function') {
                 clearInterval(checkInterval); 
                 
                 document.getElementById('qz-bar').style.width = '100%';
                 document.getElementById('qz-pct').innerText = '100%';
-                document.getElementById('qz-eta').innerText = "ETA: 00:00 SEC (RESOLVED)";
-                document.getElementById('qz-status').innerText = "SYSTEM OPTIMAL";
+                if (etaEl) etaEl.innerText = "ETA: 00:00 SEC (RESOLVED)";
+                
+                if (statusEl) {
+                    statusEl.innerText = "SYSTEM OPTIMAL";
+                    statusEl.style.color = "#f4f4f4";
+                }
                 
                 document.getElementById('qz-dots-container').style.display = "none";
                 document.getElementById('qz-text').innerHTML = "SYSTEM READY";
@@ -864,16 +843,19 @@ const CoreBridge = {
                 document.getElementById('qz-action').innerHTML = "<button class='qz-btn' id='enterBtn'>[ INITIALIZE ]</button>";
                 
                 document.getElementById('enterBtn').addEventListener('click', () => {
+                    // Instantly disable pointer events so the UI underneath is clickable immediately
+                    loader.style.pointerEvents = 'none'; 
                     loader.style.opacity = '0';
                     setTimeout(() => { loader.style.display = 'none'; }, 800);
+                    
                     this.isCoreLoaded = true;
                     this.linkEngine(); 
                 });
             }
-        }, 100);
+        }, 100); 
     },
 
-    // 7.4 - Link the Engine to our UI
+    // 7.3 - Link the Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
