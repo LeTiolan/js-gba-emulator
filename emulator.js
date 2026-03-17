@@ -871,14 +871,16 @@ const CoreBridge = {
         }, 100); 
     },
 
-    // 7.3 - Link the Engine to our UI
+ // 7.3 - Link the Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
         window.mGBA({
             canvas: document.getElementById('screen'),
+            mainScriptUrlOrBlob: 'core.js', // <--- ADD THIS LINE
             locateFile: function(path) {
                 if (path.endsWith('.wasm')) return 'core.wasm';
+                if (path.endsWith('.worker.js')) return 'core.worker.js'; // <--- ADD THIS LINE
                 return path;
             }
         }).then(function(Module) {
