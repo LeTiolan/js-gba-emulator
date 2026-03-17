@@ -927,3 +927,6 @@ const CoreBridge = {
             }
         });
     }
+       };
+
+CoreBridge.injectCore();
