@@ -689,72 +689,64 @@ document.getElementById('btn-load-state').addEventListener('click', () => Memory
 document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
 document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
 /* =========================================================
-   SECTION 7: THE EMULATOR CORE INTEGRATION (WASM BRIDGE)
+   SECTION 7: THE mGBA CORE INTEGRATION
    ========================================================= */
-
-// This module is designed to wrap around a standard WebAssembly GBA core (like mGBA or IodineGBA).
-// It connects your HTML buttons, canvas, and memory manager to the raw CPU core.
 
 const CoreBridge = {
     isCoreLoaded: false,
 
     // 7.1 - Inject the Core Library into the HTML
     injectCore: function() {
-        console.log("[Core Bridge] Attempting to load WebAssembly Engine...");
-        
-        // In a real deployment, you would host 'mgba.js' and 'mgba.wasm' in your project folder.
-        // For this architecture, we dynamically create a script tag to load it.
         const script = document.createElement('script');
-        script.src = 'core.js'; // This is the placeholder name for your downloaded emulator core
+        script.src = 'core.js'; 
         
         script.onload = () => {
-            console.log("[Core Bridge] WebAssembly Engine Loaded Successfully!");
+            alert("SUCCESS! Engine connected. Ready for games!");
             this.isCoreLoaded = true;
             this.linkEngine();
         };
         
         script.onerror = () => {
-            console.error("[Core Bridge] FAILED TO LOAD CORE: You need to place an emulator core (like mGBA or IodineGBA) in your folder and name it 'core.js'.");
+            alert("CORE MISSING! Check your files.");
         };
         
         document.body.appendChild(script);
     },
 
-    // 7.2 - Link the Core to our GBA_Engine (from Section 4)
+    // 7.2 - Link the mGBA Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
-        // Assuming the loaded core attaches itself to the window object (standard for web emulators)
-        // We link it to our existing architecture:
-        GBA_Engine.core = window.EmulatorCore || null; 
-        
-        if (GBA_Engine.core) {
-            console.log("[Core Bridge] UI successfully tethered to CPU.");
-            
-            // Override the placeholder functions in Section 4 with real Core API calls
-            
-            // 1. Send the loaded ROM buffer to the Core
-            GBA_Engine.loadRom = function(file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const romBuffer = new Uint8Array(e.target.result);
-                    this.core.loadROM(romBuffer);
-                    this.start();
+        // Start up the specific mGBA WebAssembly engine
+        if (typeof mGBA === 'function') {
+            mGBA({
+                // Tell the engine to draw exactly onto your specific screen canvas
+                canvas: document.getElementById('screen') 
+            }).then(function(Module) {
+                
+                // The engine is fully booted up and ready
+                window.EmulatorCore = Module;
+                
+                // Override our placeholder logic with the exact mGBA loading sequence
+                GBA_Engine.loadRom = function(file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const romBuffer = new Uint8Array(e.target.result);
+                        
+                        // 1. Create a virtual Nintendo cartridge in the engine's memory
+                        window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
+                        
+                        // 2. Tell mGBA to boot that exact cartridge
+                        window.EmulatorCore.callMain(['/game.gba']);
+                        
+                        // 3. Hide the Play Overlay automatically so you can see the game!
+                        if (DOM.playOverlay) {
+                            DOM.playOverlay.style.display = 'none';
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
                 };
-                reader.readAsArrayBuffer(file);
-            };
-
-            // 2. Link the Video Render hook (Section 5)
-            GBA_Engine.core.onFrame = function(pixelBuffer) {
-                VideoCore.drawFrame(pixelBuffer);
-            };
-
-            // 3. Link the Memory Manager hooks (Section 6)
-            MemoryManager.saveState = function() {
-                const state = GBA_Engine.core.saveState();
-                console.log("[Core Bridge] State saved to memory.");
-                alert("State perfectly frozen!");
-            };
+            });
         }
     }
 };
