@@ -782,7 +782,7 @@ const CoreBridge = {
                 return response.text();
             })
             .then(code => {
-                const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
+              const safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
                 
                 this.waitForEngine(loader);
 
