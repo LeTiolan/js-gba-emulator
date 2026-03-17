@@ -689,36 +689,62 @@ document.getElementById('btn-load-state').addEventListener('click', () => Memory
 document.getElementById('btn-export-sav').addEventListener('click', () => MemoryManager.exportSav());
 document.getElementById('btn-import-sav').addEventListener('click', () => MemoryManager.importSav());
 /* =========================================================
-   SECTION 7: THE mGBA CORE INTEGRATION (QUARTZ OS V3)
+   SECTION 7: THE mGBA CORE INTEGRATION (QUARTZ OS V4)
    ========================================================= */
 
 const CoreBridge = {
     isCoreLoaded: false,
 
-    // 7.1 - Build the Active Feedback Quartz Loading Screen
+    // 7.1 - Build the GPU-Accelerated Quartz Loading Screen
     injectCore: function() {
         const loader = document.createElement('div');
         loader.id = 'quartz-loader';
         
+        // Added animated drifting scanlines
         loader.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: #050505 linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2)); 
+            background: #050505 linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.3)); 
             background-size: 100% 4px; z-index: 9999; display: flex; justify-content: center; 
             align-items: center; flex-direction: column; color: #e0e0e0; 
             font-family: 'Courier New', Courier, monospace; transition: opacity 0.8s ease;
+            animation: scanlines 10s linear infinite;
         `;
         
         const style = document.createElement('style');
         style.innerHTML = `
+            @keyframes scanlines { 0% { background-position: 0 0; } 100% { background-position: 0 100px; } }
+            
             .qz-title { font-size: 4vw; font-weight: bold; letter-spacing: 4px; margin-bottom: 30px; text-shadow: 0 0 15px rgba(224,224,224,0.3); }
             .qz-dots { display: inline-block; width: 6vw; text-align: left; font-size: 1.5em; line-height: 0; position: relative; top: 5px; }
-            .qz-bar-wrapper { width: 60vw; height: 16px; background: #111; border: 2px solid #333; position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.8) inset; }
-            .qz-bar { width: 0%; height: 100%; background: #e0e0e0; transition: width 0.1s linear; box-shadow: 0 0 15px #e0e0e0; }
-            .qz-pct { font-size: 2.5vw; font-weight: bold; letter-spacing: 3px; color: #a0a0a0; margin-bottom: 15px; }
             
-            /* NEW: Hardware accelerated pulse to prove it hasn't crashed */
-            .qz-status { font-size: 1.2vw; letter-spacing: 2px; color: #777; font-weight: bold; animation: pulse 1.5s infinite; }
-            @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+            .qz-bar-wrapper { width: 60vw; height: 16px; background: #111; border: 2px solid #333; position: relative; overflow: hidden; margin-bottom: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.9) inset; }
+            
+            /* NEW: GPU-Accelerated Shimmering Progress Bar */
+            .qz-bar { 
+                width: 0%; height: 100%; 
+                background: linear-gradient(90deg, #999 0%, #ffffff 50%, #999 100%);
+                background-size: 200% 100%;
+                transition: width 0.1s linear; 
+                box-shadow: 0 0 15px #e0e0e0;
+                animation: shimmer 1.5s infinite linear;
+            }
+            @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+            
+            .qz-pct { font-size: 2.5vw; font-weight: bold; letter-spacing: 3px; color: #a0a0a0; margin-bottom: 25px; }
+            
+            /* NEW: The Spinning Core and Status Layout */
+            .qz-status-box { display: flex; align-items: center; gap: 15px; }
+            .qz-spinner { 
+                width: 1.5vw; height: 1.5vw; 
+                border: 2px solid transparent; 
+                border-top-color: #e0e0e0; 
+                border-right-color: #e0e0e0;
+                border-radius: 50%; 
+                animation: spin 0.8s linear infinite; 
+            }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            
+            .qz-status { font-size: 1.2vw; letter-spacing: 2px; color: #aaa; font-weight: bold; }
             
             .qz-btn { margin-top: 40px; padding: 15px 50px; border: 2px solid #e0e0e0; background: rgba(224,224,224,0.1); color: #e0e0e0; font-size: 2vw; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 5px; cursor: pointer; transition: all 0.3s ease; text-transform: uppercase; animation: fadeIn 1.5s forwards; box-shadow: 0 0 15px rgba(224,224,224,0.2); }
             .qz-btn:hover { background: #e0e0e0; color: #050505; box-shadow: 0 0 25px rgba(224,224,224,0.6); }
@@ -730,7 +756,12 @@ const CoreBridge = {
             <div id="qz-text" class="qz-title">Quartz OS<span id="qz-dots" class="qz-dots"></span></div>
             <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
             <div id="qz-pct" class="qz-pct">0%</div>
-            <div id="qz-status" class="qz-status">INITIATING BOOT SEQUENCE...</div>
+            
+            <div class="qz-status-box" id="qz-status-box">
+                <div class="qz-spinner" id="qz-spinner"></div>
+                <div id="qz-status" class="qz-status">INITIATING BOOT SEQUENCE...</div>
+            </div>
+            
             <div id="qz-action"></div>
         `;
         document.body.appendChild(loader);
@@ -742,9 +773,7 @@ const CoreBridge = {
             })
             .then(code => {
                 const safeCode = code.replace(/import\.meta\.url/g, '"core.js"');
-                
                 this.waitForEngine(loader);
-
                 setTimeout(() => {
                     const script = document.createElement('script');
                     script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
@@ -754,8 +783,10 @@ const CoreBridge = {
             .catch(err => {
                 document.getElementById('qz-text').innerHTML = "SYSTEM ERROR: FILE MISSING";
                 document.getElementById('qz-bar').style.background = "#ff4444";
+                document.getElementById('qz-bar').style.animation = "none";
                 document.getElementById('qz-status').innerText = "FATAL ERROR";
                 document.getElementById('qz-status').style.color = "#ff4444";
+                document.getElementById('qz-spinner').style.display = "none";
             });
     },
 
@@ -779,26 +810,25 @@ const CoreBridge = {
             document.getElementById('qz-bar').style.width = progress + '%';
             document.getElementById('qz-pct').innerText = displayPct + '%';
 
-            // Dynamic Status Text based on progress
             const statusEl = document.getElementById('qz-status');
             if (statusEl) {
                 if (displayPct < 40) statusEl.innerText = "FETCHING ENGINE RESOURCES...";
                 else if (displayPct < 75) statusEl.innerText = "ALLOCATING VIRTUAL MEMORY...";
                 else if (displayPct < 98) statusEl.innerText = "MOUNTING FILE SYSTEM...";
-                else statusEl.innerText = "COMPILING WEBASSEMBLY (THIS MAY TAKE A MOMENT)...";
+                else statusEl.innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)...";
             }
 
-            // Once the engine finally loads...
             if (typeof window.mGBA === 'function') {
                 clearInterval(checkInterval); 
                 
                 document.getElementById('qz-bar').style.width = '100%';
                 document.getElementById('qz-pct').innerText = '100%';
                 document.getElementById('qz-pct').style.color = '#e0e0e0';
+                
                 if (statusEl) {
                     statusEl.innerText = "SYSTEM OPTIMAL";
-                    statusEl.style.animation = "none"; // Stop pulsing
                     statusEl.style.color = "#e0e0e0";
+                    document.getElementById('qz-spinner').style.display = "none"; // Hide spinner when done
                 }
                 
                 const dotsEl = document.getElementById('qz-dots');
