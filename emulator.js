@@ -813,10 +813,11 @@ const CoreBridge = {
                 return response.text();
             })
             .then(code => {
-           let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
+          // FIX 1: Use a safety check for 'window' so workers don't crash
+                let safeCode = code.replace(/import\.meta\.url/g, "(typeof window !== 'undefined' ? window.location.href : self.location.href)");
                 
-               // THE FIX: We fixed the import bug, so we can let the Workers live!
-const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return 'https://letiolan.github.io/Quartz-GBA/core.wasm'; return 'https://letiolan.github.io/Quartz-GBA/' + p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";               safeCode = moduleSetup + safeCode;
+                // FIX 2: Updated moduleSetup (Removed 'window.coreBlobUrl' reference to prevent worker crashes)
+                const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return 'https://letiolan.github.io/Quartz-GBA/core.wasm'; return 'https://letiolan.github.io/Quartz-GBA/' + p; } };\n";
                 
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
@@ -943,6 +944,7 @@ window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
             locateFile: function(path) {
+                // If the engine asks for ANY .wasm file (like mGBA.wasm), give it core.wasm
                 if (path.endsWith('.wasm')) return 'https://letiolan.github.io/Quartz-GBA/core.wasm';
                 return 'https://letiolan.github.io/Quartz-GBA/' + path;
             }
