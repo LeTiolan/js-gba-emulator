@@ -470,9 +470,9 @@ const GBA_Engine = {
                 try {
                     const romBuffer = new Uint8Array(e.target.result);
                     console.log(`[Engine] ROM loaded into memory. Size: ${romBuffer.length} bytes`);
-                    
-                    if (!window.EmulatorCore) {
-                        alert("SYSTEM ERROR: The Emulator Core hasn't loaded yet!");
+                  // Check if the CoreBridge has confirmed the WASM is fully initialized
+                    if (!window.EmulatorCore || !CoreBridge.isCoreLoaded) {
+                        alert("STALL: The engine is still warming up. Please wait a few seconds and try again!");
                         return;
                     }
 
