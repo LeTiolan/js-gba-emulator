@@ -73,6 +73,10 @@ DOM.btnStartGame.onclick = function() {
         document.documentElement.requestFullscreen().catch(() => {});
     }
 
+    // 3. System Logging (CoreBridge now handles ignition automatically)
+    console.log("[System] Initializing Quartz Engine...");
+};
+
     // 3. Show Quartz Progress Bar
     const loader = document.getElementById('engine-loader');
     if (loader) {
@@ -821,11 +825,7 @@ const CoreBridge = {
                 window.wasmBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
                 return fetch('core.js');
             })
-            .then(response => {
-                if (!response.ok) throw new Error("Engine script not found");
-                return response.text();
-            })
-          .then(code => {
+         
                 // 1. Progress: Engine Downloaded
                 const bar = document.getElementById('qz-bar');
                 const pct = document.getElementById('qz-pct');
