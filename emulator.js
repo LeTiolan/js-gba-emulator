@@ -874,38 +874,34 @@ const CoreBridge = {
             });
     },
    
-// 7.2 - Ignite the Engine with Network Diagnostics
+// 7.2 - Ignite the Engine (Compatibility Mode)
     linkEngine: function() {
-        console.log("[System] Running Pre-Flight Network Check...");
+        console.log("[System] Attempting Compatibility Ignition...");
 
-        // Test if core.wasm is reachable before igniting
-        fetch('core.wasm', { method: 'HEAD' })
-            .then(response => {
-                if (!response.ok) throw new Error(`Network status: ${response.status}`);
-                console.log("[System] core.wasm is reachable. Proceeding to ignition.");
-                
-                return window.mGBA({
-                    canvas: document.getElementById('screen'),
-                    mainScriptUrlOrBlob: 'core.js',
-                    locateFile: (path) => path.endsWith('.wasm') ? 'core.wasm' : path
-                });
-            })
-            .then(Module => {
-                window.EmulatorCore = Module;
-                window.isCoreLoaded = true;
-                if (window.pendingRomFile) GBA_Engine.loadRom(window.pendingRomFile);
-            })
-            .catch(err => {
-                console.error("Ignition Failed:", err);
-                let reason = "The engine could not start.";
-                
-                // Logic to identify School District Blocks
-                if (err.message.includes("403") || err.message.includes("Network status")) {
-                    reason = "SCHOOL FILTER BLOCK: The district has blocked .wasm files.";
-                } else if (!window.crossOriginIsolated) {
-                    reason = "SECURITY BLOCK: Service Worker failed to initialize. Refresh (Ctrl+F5).";
-                }
-                alert("CRITICAL ERROR: " + reason);
+        // Force-check if the browser even allows the memory type we need
+        if (typeof SharedArrayBuffer === 'undefined') {
+            console.warn("SharedArrayBuffer blocked. Attempting fallback...");
+        }
+
+        window.mGBA({
+            canvas: document.getElementById('screen'),
+            // Use standard relative paths to avoid CORS "Origin" triggers
+            mainScriptUrlOrBlob: 'core.js',
+            locateFile: function(path) {
+                if (path.endsWith('.wasm')) return 'core.wasm';
+                return path;
+            }
+        }).then(function(Module) {
+            window.EmulatorCore = Module;
+            window.isCoreLoaded = true;
+            if (window.pendingRomFile) GBA_Engine.loadRom(window.pendingRomFile);
+        }).catch(function(err) {
+            console.error("Ignition Error:", err);
+            // This turns the [object Event] into a readable warning
+            const isFilterBlock = (typeof err === 'object');
+            const detail = isFilterBlock ? "Network/Security Block (District Filter)" : err;
+            
+            alert("ENGINE LINK ERROR: " + detail + "\n\nTry opening this in a 'Chrome Incognito' window.");
         });
     }
 };
