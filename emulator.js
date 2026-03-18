@@ -73,22 +73,11 @@ DOM.btnStartGame.onclick = function() {
         document.documentElement.requestFullscreen().catch(() => {});
     }
 
-    // 3. System Logging (CoreBridge now handles ignition automatically)
+   // 3. System Logging (CoreBridge now handles ignition automatically)
     console.log("[System] Initializing Quartz Engine...");
-};
-
-    // 3. Show Quartz Progress Bar
-    const loader = document.getElementById('engine-loader');
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-    }
     
-  // 4. Initialize Hardware
+    // 4. Initialize Hardware
     GBA_Engine.init();
-    
-   // CoreBridge.injectCore handles the ignition automatically.
-    console.log("[System] Initializing Quartz Engine...");
 };
 
 // 1.3 - Modal Management
@@ -820,12 +809,13 @@ const CoreBridge = {
                 if (!res.ok) throw new Error("WASM binary not found");
                 return res.arrayBuffer();
             })
-            .then(buffer => {
+           .then(buffer => {
                 // Store the binary in a local memory URL
                 window.wasmBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
                 return fetch('core.js');
             })
-         
+            .then(res => res.text())
+            .then(code => {
                 // 1. Progress: Engine Downloaded
                 const bar = document.getElementById('qz-bar');
                 const pct = document.getElementById('qz-pct');
