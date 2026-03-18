@@ -955,7 +955,7 @@ const CoreBridge = {
             // NEW: Set the internal flag to true ONLY after the Module is fully initialized
             CoreBridge.isCoreLoaded = true; 
             
-            alert("SUCCESS: Emulator Engine Linked & Ready!");
+            // We remove the alert so the progress bar can finish its animation
             console.log("[System] mGBA Core successfully linked and standing by.");
             
         }).catch(function(err) {
