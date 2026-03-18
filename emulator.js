@@ -800,13 +800,29 @@ const CoreBridge = {
                     this.isCoreLoaded = true;
                 }, 500);
             })
-            .catch(err => {
-                document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
-                document.getElementById('qz-bar').style.background = "#ff3333";
-                document.getElementById('qz-status').innerText = "CORE MISSING";
-                document.getElementById('qz-status').style.color = "#ff3333";
+          .catch(err => {
+                console.error("Core loading failed:", err);
+                
+                // Function to apply the 'Failure' look safely
+                const applyFaultUI = () => {
+                    const textEl = document.getElementById('qz-text');
+                    const barEl = document.getElementById('qz-bar');
+                    const statusEl = document.getElementById('qz-status');
+
+                    if (textEl) textEl.innerHTML = "SYSTEM FAULT";
+                    if (barEl) barEl.style.background = "#ff3333";
+                    if (statusEl) {
+                        statusEl.innerText = "CORE MISSING";
+                        statusEl.style.color = "#ff3333";
+                    }
+                };
+
+                // Try to apply it immediately
+                applyFaultUI();
+
+                // If the elements weren't ready, try again in 100ms
+                setTimeout(applyFaultUI, 100);
             });
-    },
 
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
