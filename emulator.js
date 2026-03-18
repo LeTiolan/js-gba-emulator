@@ -874,34 +874,48 @@ const CoreBridge = {
             });
     },
    
-// 7.2 - Ignite the Engine (Compatibility Mode)
+// 7.2 - Stealth Ignition (Bypasses School Filters)
     linkEngine: function() {
-        console.log("[System] Attempting Compatibility Ignition...");
+        console.log("[System] Decompressing Stealth Engine from Memory...");
 
-        // Check if the school filter has stripped our high-speed memory
-        if (typeof SharedArrayBuffer === 'undefined') {
-            console.warn("CRITICAL: SharedArrayBuffer is blocked by the network/browser.");
-        }
-
-        window.mGBA({
-            canvas: document.getElementById('screen'),
-            // Using absolute minimum relative paths
-            mainScriptUrlOrBlob: 'core.js',
-            locateFile: function(path) {
-                return path.endsWith('.wasm') ? 'core.wasm' : path;
+        try {
+            // 1. Verify the data exists
+            if (!window.WASM_BINARY_STRING) {
+                throw new Error("Engine data missing. Check if engine-data.js loaded correctly.");
             }
-        }).then(function(Module) {
-            window.EmulatorCore = Module;
-            window.isCoreLoaded = true;
-            if (window.pendingRomFile) GBA_Engine.loadRom(window.pendingRomFile);
-        }).catch(function(err) {
-            console.error("Ignition Error:", err);
-            // If err is an empty object, it's a confirmed District Filter block
-            const isObject = (typeof err === 'object' && !err.message);
-            const detail = isObject ? "Security Headers Stripped (School Filter)" : (err.message || err);
-            
-            alert("ENGINE LINK ERROR: " + detail + "\n\nTry a Phone Hotspot to confirm.");
-        });
+
+            // 2. Convert Base64 string back into a Binary Array (The "Reconstruction")
+            const binaryString = window.atob(window.WASM_BINARY_STRING);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            console.log("[System] Stealth Engine reconstructed. Igniting mGBA...");
+
+            // 3. Start mGBA using the manual buffer
+            window.mGBA({
+                canvas: document.getElementById('screen'),
+                mainScriptUrlOrBlob: 'core.js',
+                // This tells mGBA: "Don't download anything, use these bytes instead"
+                wasmBinary: bytes 
+            }).then(function(Module) {
+                window.EmulatorCore = Module;
+                window.isCoreLoaded = true;
+                if (window.pendingRomFile) {
+                    console.log("[System] Ignition Success. Loading ROM...");
+                    GBA_Engine.loadRom(window.pendingRomFile);
+                }
+            }).catch(function(err) {
+                console.error("Ignition Error:", err);
+                alert("STEALTH FAILURE: The browser blocked the Worker even with the data loaded. Try Chrome Incognito.");
+            });
+
+        } catch (e) {
+            console.error("Stealth Prep Error:", e);
+            alert("CRITICAL ERROR: " + e.message);
+        }
     }
 };
 
