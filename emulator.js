@@ -955,36 +955,35 @@ setTimeout(() => {
         }, 100); 
     },
 
-// 7.3 - Link the Engine to our UI (The Master Bridge)
-   linkEngine: function() {
+linkEngine: function() {
         // 1. Initial check for mGBA
         if (!window.mGBA) {
             console.log("[System] mGBA missing, retrying link...");
             setTimeout(() => this.linkEngine(), 200);
             return;
         }
+
+        // --- NEW SAFETY LANDMARK: CANVAS CHECK ---
+        const canvas = document.getElementById('screen');
+        if (!canvas || canvas.clientWidth === 0) {
+            console.log("[System] Canvas not rendered yet, retrying...");
+            setTimeout(() => this.linkEngine(), 100);
+            return;
+        }
+        // -----------------------------------------
         
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
-        // 2. The Safety Buffer: Wrapped around the actual ignition call
-     setTimeout(() => {
+        // 2. The Safety Buffer: Wrap the ignition in a timeout
+        setTimeout(() => {
             window.mGBA({
-                // Ensure this matches id="screen" in your index.html
                 canvas: document.getElementById('screen'),
                 mainScriptUrlOrBlob: window.coreBlobUrl, 
-                
-                // This stops the [object Event] by waiting for the WASM to settle
-                onRuntimeInitialized: function() {
-                    console.log("ENGINE SYNCED");
-                },
-
                 locateFile: function(path) {
                     if (path.endsWith('.wasm')) return window.wasmBlobUrl;
                     return 'https://letiolan.github.io/Quartz-GBA/' + path;
                 }
             }).then(function(Module) {
-                // ... rest of your code
-                // ... (rest of your existing .then code)
                 window.EmulatorCore = Module;
                 window.isCoreLoaded = true;
 
@@ -1010,7 +1009,7 @@ setTimeout(() => {
                 alert("ENGINE LINK ERROR: " + err.message);
                 console.error("Critical Engine Failure:", err);
             });
-        }, 200); // This 200ms wait stops the [object Event] crash
+        }, 200); 
     }
 };
 
