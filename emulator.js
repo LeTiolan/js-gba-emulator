@@ -968,15 +968,28 @@ const CoreBridge = {
                 if (path.endsWith('.wasm')) return './core.wasm';
                 return path;
             }
-      }).then(function(Module) {
-            // SUCCESS! We save the engine to the global window
+   }).then(function(Module) {
             window.EmulatorCore = Module;
-            
-            // NEW: Set the internal flag to true ONLY after the Module is fully initialized
             CoreBridge.isCoreLoaded = true; 
+
+            // Update the Quartz Loading Bar UI
+            const fill = document.getElementById('mini-bar-fill');
+            const status = document.getElementById('engine-status');
             
-            // We remove the alert so the progress bar can finish its animation
-            console.log("[System] mGBA Core successfully linked and standing by.");
+            if (fill) fill.style.width = '100%';
+            if (status) status.innerText = 'CORE IGNITED';
+
+            // Wait a moment so the user sees the 100% bar, then fade out
+            setTimeout(() => {
+                const loader = document.getElementById('engine-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        console.log("[System] Engine Ready.");
+                    }, 500);
+                }
+            }, 800);
             
         }).catch(function(err) {
             // This will tell us if the Web Workers or WASM file crashed
