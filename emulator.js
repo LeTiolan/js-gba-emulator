@@ -83,12 +83,8 @@ DOM.btnStartGame.onclick = function() {
   // 4. Initialize Hardware
     GBA_Engine.init();
     
-    // 5. Only link if the core is actually ready, otherwise let the System Loader handle it
-    if (window.isCoreLoaded && typeof CoreBridge !== 'undefined') {
-        CoreBridge.linkEngine();
-    } else {
-        console.log("[System] Core not ready yet. System Loader will auto-bridge on completion.");
-    }
+   // CoreBridge.injectCore handles the ignition automatically.
+    console.log("[System] Initializing Quartz Engine...");
 };
 
 // 1.3 - Modal Management
