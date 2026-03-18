@@ -955,7 +955,7 @@ setTimeout(() => {
 
 // 7.3 - Link the Engine to our UI (The Master Bridge)
    linkEngine: function() {
-        // If mGBA is missing, wait 200ms and try again (up to 5 times)
+        // 1. Initial check for mGBA
         if (!window.mGBA) {
             console.log("[System] mGBA missing, retrying link...");
             setTimeout(() => this.linkEngine(), 200);
@@ -963,44 +963,43 @@ setTimeout(() => {
         }
         
         console.log("[System] Attempting to ignite mGBA WASM Core...");
-        
-        console.log("[System] Attempting to ignite mGBA WASM Core...");
 
-window.mGBA({
-            canvas: document.getElementById('screen'),
-           mainScriptUrlOrBlob: window.coreBlobUrl, 
-            locateFile: function(path) {
-                // Force the engine to use the binary we already have in RAM
-                if (path.endsWith('.wasm')) return window.wasmBlobUrl;
-                return 'https://letiolan.github.io/Quartz-GBA/' + path;
-            }
-        }).then(function(Module) {
-            window.EmulatorCore = Module;
-           window.isCoreLoaded = true;
-
-            // SUCCESS: Engine is online. Now load the ROM.
-            if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
-                console.log("[System] Ignition Success. Loading ROM...");
-                GBA_Engine.loadRom(pendingRomFile);
-            }
-
-            const fill = document.getElementById('mini-bar-fill');
-            const status = document.getElementById('engine-status');
-            if (fill) fill.style.width = '100%';
-            if (status) status.innerText = 'CORE IGNITED';
-
-            setTimeout(() => {
-                const loader = document.getElementById('engine-loader');
-                if (loader) {
-                    loader.style.opacity = '0';
-                    setTimeout(() => { loader.style.display = 'none'; }, 500);
+        // 2. The Safety Buffer: Wrapped around the actual ignition call
+        setTimeout(() => {
+            window.mGBA({
+                canvas: document.getElementById('screen'),
+                mainScriptUrlOrBlob: window.coreBlobUrl, 
+                locateFile: function(path) {
+                    if (path.endsWith('.wasm')) return window.wasmBlobUrl;
+                    return 'https://letiolan.github.io/Quartz-GBA/' + path;
                 }
-            }, 800);
-            
-        }).catch(function(err) {
-            alert("ENGINE LINK ERROR: " + err.message);
-            console.error("Critical Engine Failure:", err);
-        });
+            }).then(function(Module) {
+                window.EmulatorCore = Module;
+                window.isCoreLoaded = true;
+
+                if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
+                    console.log("[System] Ignition Success. Loading ROM...");
+                    GBA_Engine.loadRom(pendingRomFile);
+                }
+
+                const fill = document.getElementById('mini-bar-fill');
+                const status = document.getElementById('engine-status');
+                if (fill) fill.style.width = '100%';
+                if (status) status.innerText = 'CORE IGNITED';
+
+                setTimeout(() => {
+                    const loader = document.getElementById('engine-loader');
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => { loader.style.display = 'none'; }, 500);
+                    }
+                }, 800);
+
+            }).catch(function(err) {
+                alert("ENGINE LINK ERROR: " + err.message);
+                console.error("Critical Engine Failure:", err);
+            });
+        }, 200); // This 200ms wait stops the [object Event] crash
     }
 };
 
