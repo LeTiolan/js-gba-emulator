@@ -70,8 +70,18 @@ DOM.btnStartGame.onclick = function() {
     toggleMobileUI: document.getElementById('toggle-mobile-ui'),
     touchControls: document.getElementById('touch-controls')
 };
+// --- ATTACH START LOGIC ---
+DOM.btnStartGame.onclick = function() {
+    DOM.playOverlay.style.display = 'none';
+    const loader = document.getElementById('engine-loader');
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+    }
+    CoreBridge.linkEngine();
+};
 
-// 1.2 - Main Menu Toggle Logic
+// 1.2 - Menu Toggle Logic
 DOM.menuBtn.addEventListener('click', () => {
     DOM.menuPanel.classList.toggle('open');
 });
