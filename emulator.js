@@ -943,9 +943,9 @@ const CoreBridge = {
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
             // We removed noWorkers here to match the Section 7.1 fix!
-            locateFile: function(path) {
-                const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
-                if (path.endsWith('.wasm')) return baseUrl + 'core.wasm';
+           locateFile: function(path) {
+                // Use a relative path so it works on GitHub Pages AND local testing
+                if (path.endsWith('.wasm')) return './core.wasm';
                 return path;
             }
       }).then(function(Module) {
