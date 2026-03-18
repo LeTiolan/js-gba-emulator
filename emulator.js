@@ -880,17 +880,20 @@ const CoreBridge = {
         console.log("[System] Engine sync handled by InjectCore.");
     },
 
-    // --- REPLACE YOUR OLD LINKENGINE WITH THIS CLEAN VERSION ---
+// 7.2 - Ignite the Engine Safely via Service Worker
     linkEngine: function() {
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
         window.mGBA({
             canvas: document.getElementById('screen'),
-            mainScriptUrlOrBlob: window.coreBlobUrl, 
+            
+            // USE REAL PATHS SO THE SERVICE WORKER CAN ALLOW THEM
+            mainScriptUrlOrBlob: 'core.js', 
             locateFile: function(path) {
-                if (path.endsWith('.wasm')) return window.wasmBlobUrl;
-                return 'https://letiolan.github.io/Quartz-GBA/' + path;
+                if (path.endsWith('.wasm')) return 'core.wasm';
+                return path;
             }
+            
         }).then(function(Module) {
             window.EmulatorCore = Module;
             window.isCoreLoaded = true;
@@ -902,7 +905,7 @@ const CoreBridge = {
             }
 
         }).catch(function(err) {
-            alert("ENGINE LINK ERROR: " + err.message);
+            alert("ENGINE LINK ERROR: " + err);
             console.error("Critical Engine Failure:", err);
         });
     }
