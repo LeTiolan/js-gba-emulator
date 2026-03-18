@@ -470,11 +470,11 @@ const GBA_Engine = {
                 try {
                     const romBuffer = new Uint8Array(e.target.result);
                     console.log(`[Engine] ROM loaded into memory. Size: ${romBuffer.length} bytes`);
-                  // Check if the CoreBridge has confirmed the WASM is fully initialized
-                    if (!window.EmulatorCore || !CoreBridge.isCoreLoaded) {
-                        alert("STALL: The engine is still warming up. Please wait a few seconds and try again!");
-                        return;
-                    }
+                  if (!window.EmulatorCore || !CoreBridge.isCoreLoaded) {
+        // Instead of an alert, we update the UI text
+        document.getElementById('engine-status').innerText = "WAITING FOR ENGINE...";
+        return;
+    }
 
                     // 1. Inject the ROM into the virtual file system
                     window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
