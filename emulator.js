@@ -874,20 +874,22 @@ const CoreBridge = {
             });
     },
    
- // 7.2 - Ignite the Engine Safely with Absolute Folder Path
+// 7.2 - Ignite the Engine Safely with Absolute Folder Path
     linkEngine: function() {
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
-        // Dynamically get the exact folder your site is running from
-        const currentFolder = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        // This line calculates the exact folder the index.html is sitting in
+        const currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '';
+        const origin = window.location.origin;
+        const absoluteFolder = origin + currentPath;
 
         window.mGBA({
             canvas: document.getElementById('screen'),
             
-            // Force the absolute path so the Web Worker cannot get lost
-            mainScriptUrlOrBlob: currentFolder + '/core.js', 
+            // Force the full URL so the Service Worker cannot lose the file
+            mainScriptUrlOrBlob: absoluteFolder + '/core.js', 
             locateFile: function(path) {
-                if (path.endsWith('.wasm')) return 'core.wasm';
+                if (path.endsWith('.wasm')) return absoluteFolder + '/core.wasm';
                 return path;
             }
             
@@ -901,8 +903,9 @@ const CoreBridge = {
             }
 
         }).catch(function(err) {
-            alert("ENGINE LINK ERROR: " + err);
+            // If it still fails, this will tell us WHY (404 vs Security)
             console.error("Critical Engine Failure:", err);
+            alert("ENGINE LINK ERROR: " + (err.message || "File not found or Security Block"));
         });
     }
 };
