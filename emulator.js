@@ -6,13 +6,6 @@
 /* =========================================================
    DIAGNOSTIC OVERRIDE: ON-SCREEN CONSOLE
    ========================================================= */
-window.addEventListener('error', function(event) {
-    const errorLog = document.createElement('div');
-    errorLog.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:#ff0000; color:#fff; z-index:999999; padding:20px; font-family:"Courier New", monospace; font-size:2vw; font-weight:bold; box-sizing:border-box; word-wrap: break-word;';
-    errorLog.innerText = `CRITICAL SYSTEM FAILURE:\n${event.message}\nLine: ${event.lineno}\nFile: ${event.filename}`;
-    document.body.appendChild(errorLog);
-});
-
 window.addEventListener('unhandledrejection', function(event) {
     const errorLog = document.createElement('div');
     errorLog.style.cssText = 'position:fixed; bottom:0; left:0; width:100vw; background:#8b0000; color:#fff; z-index:999999; padding:20px; font-family:"Courier New", monospace; font-size:2vw; font-weight:bold; box-sizing:border-box; word-wrap: break-word;';
