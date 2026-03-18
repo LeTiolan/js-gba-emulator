@@ -843,7 +843,9 @@ const CoreBridge = {
 const finalEngineCode = moduleSetup + "\n" + safeCode;
 
 // 2. Create the memory blob
-const blob = new Blob([finalEngineCode], { type: 'application/javascript' });
+// To this:
+const blob = new Blob([finalEngineCode], { type: 'text/javascript' });
+if (window.coreBlobUrl) URL.revokeObjectURL(window.coreBlobUrl); // Clean up old memory
 window.coreBlobUrl = URL.createObjectURL(blob);
                 
 this.waitForEngine(loader);
