@@ -64,9 +64,13 @@ DOM.btnStartGame.onclick = function() {
         return;
     }
 
-    // 1. UI Cleanup
+ // 1. UI Cleanup
     if (DOM.playOverlay) DOM.playOverlay.style.display = 'none';
     DOM.playOverlay.classList.remove('active');
+    
+    // -> UNHIDE CANVAS TO WAKE UP THE ENGINE <-
+    const canvas = document.getElementById('screen');
+    if (canvas) canvas.style.display = 'block';
     
     // 2. Fullscreen Request
     if (document.documentElement.requestFullscreen) {
@@ -847,13 +851,20 @@ const CoreBridge = {
                     script.textContent = finalEngineCode + "\nwindow.mGBA = mGBA; window.isCoreLoaded = true;";
                     document.body.appendChild(script);
 
-                    // Final UI Update
+                  // Final UI Update
                     if (bar) bar.style.width = "100%";
                     if (pct) pct.innerText = "100%";
                     if (status) status.innerText = "SYSTEM READY";
 
+                    // HIDE LOADER IMMEDIATELY SO WE CAN SEE THE MENU
+                    const qzLoader = document.getElementById('quartz-loader');
+                    if (qzLoader) {
+                        qzLoader.style.opacity = '0';
+                        setTimeout(() => { qzLoader.style.display = 'none'; }, 800);
+                    }
+
                     // START THE ENGINE
-                    this.linkEngine(); 
+                    this.linkEngine();
                }, 500);
             })
             .catch(err => {
@@ -887,10 +898,10 @@ linkEngine: function() {
             return;
         }
 
-     // --- NEW SAFETY LANDMARK: CANVAS CHECK ---
+   // --- NEW SAFETY LANDMARK: CANVAS CHECK ---
         const canvas = document.getElementById('screen');
-        if (!canvas) {
-            console.log("[System] Canvas not found in HTML, retrying...");
+        if (!canvas || canvas.clientWidth === 0) {
+            console.log("[System] Waiting for user to hit Start Game...");
             setTimeout(() => this.linkEngine(), 100);
             return;
         }
