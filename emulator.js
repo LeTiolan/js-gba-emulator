@@ -890,10 +890,14 @@ const CoreBridge = {
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
             locateFile: function(path) {
-                // Hardcoding your exact URL so the Blob can't get lost
                 const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
-                if (path.endsWith('.wasm') || path.endsWith('.worker.js')) {
-                    return baseUrl + path;
+                
+                // Force it to the EXACT URL and EXACT file name you chose
+                if (path.endsWith('.wasm')) {
+                    return baseUrl + 'core.wasm';
+                }
+                if (path.endsWith('.worker.js')) {
+                    return baseUrl + 'core.worker.js';
                 }
                 return path;
             }
