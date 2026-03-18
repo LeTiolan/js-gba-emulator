@@ -64,24 +64,28 @@ DOM.btnStartGame.onclick = function() {
         return;
     }
 
- // 1. UI Cleanup
+    // 1. UI Cleanup
     if (DOM.playOverlay) DOM.playOverlay.style.display = 'none';
     DOM.playOverlay.classList.remove('active');
     
-    // -> UNHIDE CANVAS TO WAKE UP THE ENGINE <-
+    // 2. Unhide Canvas
     const canvas = document.getElementById('screen');
     if (canvas) canvas.style.display = 'block';
     
-    // 2. Fullscreen Request
+    // 3. Fullscreen Request
     if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(() => {});
     }
 
-   // 3. System Logging (CoreBridge now handles ignition automatically)
-    console.log("[System] Initializing Quartz Engine...");
-    
     // 4. Initialize Hardware
     GBA_Engine.init();
+
+    // 5. Ignite the core synchronously with the user click
+    if (!window.EmulatorCore) {
+        CoreBridge.linkEngine();
+    } else {
+        GBA_Engine.loadRom(pendingRomFile);
+    }
 };
 
 // 1.3 - Modal Management
@@ -841,16 +845,15 @@ const CoreBridge = {
                     if (bar) bar.style.width = "100%";
                     if (pct) pct.innerText = "100%";
                     if (status) status.innerText = "SYSTEM READY";
-
-                    // HIDE LOADER IMMEDIATELY SO WE CAN SEE THE MENU
+// HIDE LOADER IMMEDIATELY SO WE CAN SEE THE MENU
                     const qzLoader = document.getElementById('quartz-loader');
                     if (qzLoader) {
                         qzLoader.style.opacity = '0';
                         setTimeout(() => { qzLoader.style.display = 'none'; }, 800);
                     }
 
-                    // START THE ENGINE
-                    this.linkEngine();
+                    // We intentionally DO NOT start the engine here anymore.
+                    console.log("[System] Core downloaded. Waiting for user Play command...");
                }, 500);
             })
             .catch(err => {
@@ -871,60 +874,37 @@ const CoreBridge = {
             });
     },
    
-   // 7.2 - Legacy Silencer (Handled by 7.1)
+  // 7.2 - Legacy Silencer (Handled by 7.1)
     waitForEngine: function(loader) {
+        // This is now automated in Section 7.1
         console.log("[System] Engine sync handled by InjectCore.");
     },
 
-linkEngine: function() {
-        // 1. Initial check for mGBA
-        if (!window.mGBA) {
-            console.log("[System] mGBA missing, retrying link...");
-            setTimeout(() => this.linkEngine(), 200);
-            return;
-        }
-
-   // --- NEW SAFETY LANDMARK: CANVAS CHECK ---
-        const canvas = document.getElementById('screen');
-        if (!canvas || canvas.clientWidth === 0) {
-            console.log("[System] Waiting for user to hit Start Game...");
-            setTimeout(() => this.linkEngine(), 100);
-            return;
-        }
-        // -----------------------------------------
-        
+    // --- REPLACE YOUR OLD LINKENGINE WITH THIS CLEAN VERSION ---
+    linkEngine: function() {
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
-        // 2. The Safety Buffer: Wrap the ignition in a timeout
-        setTimeout(() => {
-            window.mGBA({
-                canvas: document.getElementById('screen'),
-                mainScriptUrlOrBlob: window.coreBlobUrl, 
-                locateFile: function(path) {
-                    if (path.endsWith('.wasm')) return window.wasmBlobUrl;
-                    return 'https://letiolan.github.io/Quartz-GBA/' + path;
-                }
-            }).then(function(Module) {
-                window.EmulatorCore = Module;
-                window.isCoreLoaded = true;
+        window.mGBA({
+            canvas: document.getElementById('screen'),
+            mainScriptUrlOrBlob: window.coreBlobUrl, 
+            locateFile: function(path) {
+                if (path.endsWith('.wasm')) return window.wasmBlobUrl;
+                return 'https://letiolan.github.io/Quartz-GBA/' + path;
+            }
+        }).then(function(Module) {
+            window.EmulatorCore = Module;
+            window.isCoreLoaded = true;
 
-                if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
-                    console.log("[System] Ignition Success. Loading ROM...");
-                    GBA_Engine.loadRom(pendingRomFile);
-                }
+            // Engine is ready, load the game immediately
+            if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
+                console.log("[System] Ignition Success. Loading ROM...");
+                GBA_Engine.loadRom(pendingRomFile);
+            }
 
-              // Target the True Pixel Loader
-                const qzLoader = document.getElementById('quartz-loader');
-                if (qzLoader) {
-                    qzLoader.style.opacity = '0';
-                    setTimeout(() => { qzLoader.style.display = 'none'; }, 800);
-                }
-
-            }).catch(function(err) {
-                alert("ENGINE LINK ERROR: " + err.message);
-                console.error("Critical Engine Failure:", err);
-            });
-        }, 200); 
+        }).catch(function(err) {
+            alert("ENGINE LINK ERROR: " + err.message);
+            console.error("Critical Engine Failure:", err);
+        });
     }
 };
 
