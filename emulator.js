@@ -874,22 +874,22 @@ const CoreBridge = {
             });
     },
    
-// 7.2 - Ignite the Engine Safely with Absolute Folder Path
+// 7.2 - Ignite the Engine (The Clean Way)
     linkEngine: function() {
-        console.log("[System] Attempting to ignite mGBA WASM Core...");
-
-        // This line calculates the exact folder the index.html is sitting in
-        const currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) || '';
-        const origin = window.location.origin;
-        const absoluteFolder = origin + currentPath;
+        console.log("[System] Checking Security Context...");
+        
+        // If this is false, the emulator WILL crash. 
+        if (!window.crossOriginIsolated) {
+            console.warn("[System] COI not active yet. Waiting for Service Worker reload...");
+        }
 
         window.mGBA({
             canvas: document.getElementById('screen'),
             
-            // Force the full URL so the Service Worker cannot lose the file
-            mainScriptUrlOrBlob: absoluteFolder + '/core.js', 
+            // Simplified relative paths. The Service Worker intercepts these!
+            mainScriptUrlOrBlob: 'core.js', 
             locateFile: function(path) {
-                if (path.endsWith('.wasm')) return absoluteFolder + '/core.wasm';
+                if (path.endsWith('.wasm')) return 'core.wasm';
                 return path;
             }
             
@@ -903,9 +903,9 @@ const CoreBridge = {
             }
 
         }).catch(function(err) {
-            // If it still fails, this will tell us WHY (404 vs Security)
             console.error("Critical Engine Failure:", err);
-            alert("ENGINE LINK ERROR: " + (err.message || "File not found or Security Block"));
+            // This captures the [object Event] and turns it into text
+            alert("ENGINE LINK ERROR: The browser blocked the engine worker. Try refreshing once more.");
         });
     }
 };
