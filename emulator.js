@@ -874,21 +874,18 @@ const CoreBridge = {
             });
     },
    
-  // 7.2 - Legacy Silencer (Handled by 7.1)
-    waitForEngine: function(loader) {
-        // This is now automated in Section 7.1
-        console.log("[System] Engine sync handled by InjectCore.");
-    },
-
-// 7.2 - Ignite the Engine Safely via Service Worker
+ // 7.2 - Ignite the Engine Safely with Absolute Folder Path
     linkEngine: function() {
         console.log("[System] Attempting to ignite mGBA WASM Core...");
+
+        // Dynamically get the exact folder your site is running from
+        const currentFolder = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
 
         window.mGBA({
             canvas: document.getElementById('screen'),
             
-            // USE REAL PATHS SO THE SERVICE WORKER CAN ALLOW THEM
-            mainScriptUrlOrBlob: 'core.js', 
+            // Force the absolute path so the Web Worker cannot get lost
+            mainScriptUrlOrBlob: currentFolder + '/core.js', 
             locateFile: function(path) {
                 if (path.endsWith('.wasm')) return 'core.wasm';
                 return path;
@@ -898,7 +895,6 @@ const CoreBridge = {
             window.EmulatorCore = Module;
             window.isCoreLoaded = true;
 
-            // Engine is ready, load the game immediately
             if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
                 console.log("[System] Ignition Success. Loading ROM...");
                 GBA_Engine.loadRom(pendingRomFile);
