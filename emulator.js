@@ -16,7 +16,7 @@ window.addEventListener('unhandledrejection', function(event) {
    SECTION 1: DOM BINDINGS & UI NAVIGATION
    ========================================================= */
 
-// 1.1 - DOM Element Selection
+// 1.1 - DOM Element Selection (Unified)
 const DOM = {
     // Menu & Overlays
     menuBtn: document.getElementById('menu-btn'),
@@ -24,31 +24,13 @@ const DOM = {
     themeOverlay: document.getElementById('theme-fade-overlay'),
     playOverlay: document.getElementById('play-overlay'),
     
-   // Core Buttons
+    // Core Buttons
     btnLoad: document.getElementById('btn-load'),
     btnStartGame: document.getElementById('btn-start-game'),
     
     // File Inputs (Dual-Loader)
     dummyLoader: document.getElementById('dummy-loader'),
-    libraryBtn: document.getElementById('btn-library')
-}; 
-
-// --- ATTACH START LOGIC ---
-DOM.btnStartGame.onclick = function() {
-    DOM.playOverlay.style.display = 'none';
-    const loader = document.getElementById('engine-loader');
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-    }
-    CoreBridge.linkEngine();
-};
-
-// 1.2 - Menu Toggle Logic
-    
-    // File Inputs (Dual-Loader)
-    dummyLoader: document.getElementById('dummyLoader'),
-    romLoader: document.getElementById('romLoader'),
+    romLoader: document.getElementById('rom-loader'),
     
     // Modals
     modalLibrary: document.getElementById('modal-library'),
@@ -70,48 +52,55 @@ DOM.btnStartGame.onclick = function() {
     toggleMobileUI: document.getElementById('toggle-mobile-ui'),
     touchControls: document.getElementById('touch-controls')
 };
-// --- ATTACH START LOGIC ---
+
+// 1.2 - Main Menu Toggle & Engine Start Logic
+DOM.menuBtn.onclick = function() {
+    DOM.menuPanel.classList.toggle('open');
+};
+
 DOM.btnStartGame.onclick = function() {
-    DOM.playOverlay.style.display = 'none';
+    // Hide the "Press Play" screen
+    if (DOM.playOverlay) DOM.playOverlay.style.display = 'none';
+    
+    // Show the Quartz Engine Loader
     const loader = document.getElementById('engine-loader');
     if (loader) {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
     }
-    CoreBridge.linkEngine();
+    
+    // Signal CoreBridge to begin the WASM linking process
+    if (typeof CoreBridge !== 'undefined' && CoreBridge.linkEngine) {
+        CoreBridge.linkEngine();
+    }
 };
 
-// 1.2 - Menu Toggle Logic
-DOM.menuBtn.addEventListener('click', () => {
-    DOM.menuPanel.classList.toggle('open');
-});
-
-// Close menu if clicking outside of it
+// Close menu if clicking outside
 document.addEventListener('click', (e) => {
-    if (!DOM.menuPanel.contains(e.target) && e.target !== DOM.menuBtn) {
+    if (DOM.menuPanel && !DOM.menuPanel.contains(e.target) && e.target !== DOM.menuBtn) {
         DOM.menuPanel.classList.remove('open');
     }
 });
 
 // 1.3 - Modal Management
 function openModal(modal) {
-    DOM.menuPanel.classList.remove('open'); // Close menu when opening modal
-    modal.classList.add('active');
+    if (DOM.menuPanel) DOM.menuPanel.classList.remove('open');
+    if (modal) modal.classList.add('active');
 }
 
 function closeModal(modal) {
-    modal.classList.remove('active');
+    if (modal) modal.classList.remove('active');
 }
 
-// Bind Modal Opens
-DOM.btnLibrary.addEventListener('click', () => openModal(DOM.modalLibrary));
-DOM.btnKeybinds.addEventListener('click', () => openModal(DOM.modalInputs));
-DOM.btnCheats.addEventListener('click', () => openModal(DOM.modalCheats));
+// Bind Modal Triggers
+if (DOM.btnLibrary) DOM.btnLibrary.addEventListener('click', () => openModal(DOM.modalLibrary));
+if (DOM.btnKeybinds) DOM.btnKeybinds.addEventListener('click', () => openModal(DOM.modalInputs));
+if (DOM.btnCheats) DOM.btnCheats.addEventListener('click', () => openModal(DOM.modalCheats));
 
-// Bind Modal Closes
-DOM.btnCloseLibrary.addEventListener('click', () => closeModal(DOM.modalLibrary));
-DOM.btnCloseKeys.addEventListener('click', () => closeModal(DOM.modalInputs));
-DOM.btnCloseCheats.addEventListener('click', () => closeModal(DOM.modalCheats));
+// Bind Modal Close Buttons
+if (DOM.btnCloseLibrary) DOM.btnCloseLibrary.addEventListener('click', () => closeModal(DOM.modalLibrary));
+if (DOM.btnCloseKeys) DOM.btnCloseKeys.addEventListener('click', () => closeModal(DOM.modalInputs));
+if (DOM.btnCloseCheats) DOM.btnCloseCheats.addEventListener('click', () => closeModal(DOM.modalCheats));
 
 // 1.4 - System Toggles (Dark Mode & Mobile UI)
 DOM.toggleDarkMode.addEventListener('change', (e) => {
