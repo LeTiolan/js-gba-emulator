@@ -835,6 +835,8 @@ const CoreBridge = {
               // Add the Module configuration to the top of the engine code
 const finalEngineCode = moduleSetup + safeCode;
 
+// This glues your 'moduleSetup' config to the front of the 'safeCode' engine
+const finalEngineCode = moduleSetup + "\n" + safeCode;
 const blob = new Blob([finalEngineCode], { type: 'application/javascript' });
 window.coreBlobUrl = URL.createObjectURL(blob);
                 
