@@ -775,7 +775,7 @@ const CoreBridge = {
         `;
         document.body.appendChild(loader);
 
-   // 7.1 - Load mGBA Core (Bypassing strict module security)
+  // === START OF 7.1 ===
     injectCore: function(loader) {
         fetch('core.js')
             .then(response => {
@@ -783,43 +783,37 @@ const CoreBridge = {
                 return response.text();
             })
             .then(code => {
-                // 1. Fix the relative URL trap
                 let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
-
-                // 2. THE WORKER KILLER: We force Worker to be undefined and noWorkers to be true.
-                // This prevents the Line 1561 crash by stopping the engine from even trying to use threads.
+                
+                // The Worker Killer Fix
                 const workerFix = "var Worker = undefined; var Module = { 'noWorkers': true, 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
                 safeCode = workerFix + safeCode;
                 
-                // 3. Nuke ALL export keywords so the engine doesn't panic
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
 
-                // 4. Package this clean code into a virtual file (Blob)
                 const blob = new Blob([safeCode], { type: 'application/javascript' });
                 window.coreBlobUrl = URL.createObjectURL(blob);
                 
-                // 5. Trigger your custom loading UI
                 this.waitForEngine(loader);
 
                 setTimeout(() => {
                     const script = document.createElement('script');
                     script.type = 'module'; 
-                    // We append mGBA to the window so Section 7.3 can see it
                     script.textContent = safeCode + "\nwindow.mGBA = mGBA; this.isCoreLoaded = true;"; 
                     document.body.appendChild(script);
-                    this.isCoreLoaded = true; // Mark as ready
+                    this.isCoreLoaded = true;
                 }, 500);
             })
             .catch(err => {
-                // Your custom error screen logic preserved exactly!
                 document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
                 document.getElementById('qz-bar').style.background = "#ff3333";
                 document.getElementById('qz-status').innerText = "CORE MISSING";
                 document.getElementById('qz-status').style.color = "#ff3333";
                 document.getElementById('qz-dots-container').style.display = "none";
             });
-    },
+    }, 
+    // === END OF 7.1 (DO NOT DELETE THIS COMMA) ===
 
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
