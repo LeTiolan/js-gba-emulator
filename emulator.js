@@ -807,9 +807,19 @@ const CoreBridge = {
         `;
         document.body.appendChild(loader);
   
-        fetch('core.js')
+      // Pre-fetch the binary to bypass GitHub's MIME-type restrictions
+        fetch('https://letiolan.github.io/Quartz-GBA/core.wasm')
+            .then(res => {
+                if (!res.ok) throw new Error("WASM binary not found");
+                return res.arrayBuffer();
+            })
+            .then(buffer => {
+                // Store the binary in a local memory URL
+                window.wasmBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
+                return fetch('core.js');
+            })
             .then(response => {
-                if (!response.ok) throw new Error("File not found");
+                if (!response.ok) throw new Error("Engine script not found");
                 return response.text();
             })
             .then(code => {
@@ -817,7 +827,7 @@ const CoreBridge = {
                 let safeCode = code.replace(/import\.meta\.url/g, "(typeof window !== 'undefined' ? window.location.href : self.location.href)");
                 
                 // FIX 2: Updated moduleSetup (Removed 'window.coreBlobUrl' reference to prevent worker crashes)
-                const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return 'https://letiolan.github.io/Quartz-GBA/core.wasm'; return 'https://letiolan.github.io/Quartz-GBA/' + p; } };\n";
+               const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return window.wasmBlobUrl; return 'https://letiolan.github.io/Quartz-GBA/' + p; } };\n";
                 
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
@@ -942,10 +952,10 @@ const CoreBridge = {
 
 window.mGBA({
             canvas: document.getElementById('screen'),
-            mainScriptUrlOrBlob: window.coreBlobUrl, 
+           mainScriptUrlOrBlob: window.coreBlobUrl, 
             locateFile: function(path) {
-                // If the engine asks for ANY .wasm file (like mGBA.wasm), give it core.wasm
-                if (path.endsWith('.wasm')) return 'https://letiolan.github.io/Quartz-GBA/core.wasm';
+                // Force the engine to use the binary we already have in RAM
+                if (path.endsWith('.wasm')) return window.wasmBlobUrl;
                 return 'https://letiolan.github.io/Quartz-GBA/' + path;
             }
         }).then(function(Module) {
