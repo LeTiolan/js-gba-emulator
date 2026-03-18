@@ -445,7 +445,7 @@ const GBA_Engine = {
     animationFrameId: null,
     core: null, // This will eventually hold our WASM/JS CPU core
     
-    // 4.2 - Initialize Audio & Video Systems
+    // 4.2 - Initialize Audio Subsystem Only (Video handled by WASM Core)
     init: function() {
         console.log("[Engine] Initializing Hardware Subsystems...");
         
@@ -456,17 +456,6 @@ const GBA_Engine = {
             console.log(`[Engine] AudioContext booted. Sample Rate: ${this.audioContext.sampleRate}Hz`);
         } catch (e) {
             console.error("[Engine] Web Audio API not supported in this browser.", e);
-        }
-
-        // Setup Canvas Context (Preparing for WebGL or 2D rendering)
-        const canvas = document.getElementById('screen');
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (gl) {
-            console.log("[Engine] WebGL Hardware Acceleration Active.");
-            // WebGL setup logic will expand here in the Video module
-        } else {
-            console.log("[Engine] WebGL unavailable. Falling back to 2D Canvas.");
-            this.ctx = canvas.getContext('2d');
         }
     },
 
@@ -588,18 +577,15 @@ const VideoCore = {
     height: 160, // Native GBA vertical resolution
     imageData: null,
 
-    // 5.1 - Initialize the Canvas Subsystem
+   // 5.1 - Initialize the Canvas Subsystem
     init: function() {
-        // We use alpha: false to optimize performance since GBA has no transparent screen background
-        this.ctx = this.canvas.getContext('2d', { alpha: false });
-        
-        // Create a blank image buffer exactly the size of a GBA screen
-        this.imageData = this.ctx.createImageData(this.width, this.height);
-        console.log("[Video] 2D Rendering Pipeline initialized.");
+        console.log("[Video] Display styling initialized. Awaiting WASM Core WebGL injection...");
         
         // Apply the default UI filter on boot
-        const currentFilter = document.getElementById('select-video-filter').value;
-        this.updateFilter(currentFilter);
+        const filterSelect = document.getElementById('select-video-filter');
+        if (filterSelect) {
+            this.updateFilter(filterSelect.value);
+        }
     },
 
     // 5.2 - The Render Call (Fired by the Engine Loop)
