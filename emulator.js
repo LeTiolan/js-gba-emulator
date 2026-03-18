@@ -932,8 +932,9 @@ const CoreBridge = {
 // 7.3 - Link the Engine to our UI
     linkEngine: function() {
         // Ensure the core is actually injected before trying to start
-        if (!this.isCoreLoaded || !window.mGBA) {
-            alert("CRITICAL: mGBA function not found in window scope.");
+       if (!this.isCoreLoaded || !window.mGBA) {
+            document.getElementById('engine-status').innerText = "ERROR: CORE NOT FOUND";
+            console.error("mGBA function not found.");
             return;
         }
         
