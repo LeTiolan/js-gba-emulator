@@ -890,9 +890,10 @@ const CoreBridge = {
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
             locateFile: function(path) {
-                if (path.endsWith('.wasm')) {
-                    // Force the engine to look at the real website, not the virtual Blob folder
-                    return new URL('core.wasm', window.location.href).href;
+                // Hardcoding your exact URL so the Blob can't get lost
+                const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
+                if (path.endsWith('.wasm') || path.endsWith('.worker.js')) {
+                    return baseUrl + path;
                 }
                 return path;
             }
@@ -919,7 +920,6 @@ const CoreBridge = {
                 reader.readAsArrayBuffer(file);
             });
         }).catch(function(err) {
-            // Print the exact error to the screen since we don't have a console!
             const statusEl = document.getElementById('qz-status');
             if (statusEl) {
                 statusEl.innerText = "CRASH: " + err.message;
@@ -927,6 +927,6 @@ const CoreBridge = {
             }
         });
     }
-       };
+};
 
 CoreBridge.injectCore();
