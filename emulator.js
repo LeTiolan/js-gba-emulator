@@ -24,26 +24,25 @@ const DOM = {
     themeOverlay: document.getElementById('theme-fade-overlay'),
     playOverlay: document.getElementById('play-overlay'),
     
-    // Core Buttons
+   // Core Buttons
     btnLoad: document.getElementById('btn-load'),
     btnStartGame: document.getElementById('btn-start-game'),
-   }; // This closes the DOM object
-
-// --- NEW CODE START ---
-DOM.btnStartGame.onclick = function() {
-    // Hide the "Press Play" screen
-    DOM.playOverlay.style.display = 'none';
     
-    // Show the new Quartz Engine Loader from the HTML
+    // File Inputs (Dual-Loader)
+    dummyLoader: document.getElementById('dummy-loader'),
+    libraryBtn: document.getElementById('btn-library')
+}; 
+
+// --- ATTACH START LOGIC ---
+DOM.btnStartGame.onclick = function() {
+    DOM.playOverlay.style.display = 'none';
     const loader = document.getElementById('engine-loader');
     if (loader) {
         loader.style.display = 'flex';
+        loader.style.opacity = '1';
     }
-    
-    // Tell the engine to start linking now
     CoreBridge.linkEngine();
 };
-// --- NEW CODE END ---
 
 // 1.2 - Menu Toggle Logic
     
