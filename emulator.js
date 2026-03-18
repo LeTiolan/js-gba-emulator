@@ -53,34 +53,42 @@ const DOM = {
     touchControls: document.getElementById('touch-controls')
 };
 
-// 1.2 - Main Menu Toggle & Engine Start Logic
+// 1.2 - Main Menu Toggle & Master Engine Start
 DOM.menuBtn.onclick = function() {
     DOM.menuPanel.classList.toggle('open');
 };
 
 DOM.btnStartGame.onclick = function() {
-    // Hide the "Press Play" screen
+    if (!pendingRomFile) {
+        alert("Please load a game first!");
+        return;
+    }
+
+    // 1. UI Cleanup
     if (DOM.playOverlay) DOM.playOverlay.style.display = 'none';
+    DOM.playOverlay.classList.remove('active');
     
-    // Show the Quartz Engine Loader
+    // 2. Fullscreen Request (QoL)
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+
+    // 3. Show Quartz Progress Bar
     const loader = document.getElementById('engine-loader');
     if (loader) {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
     }
     
-    // Signal CoreBridge to begin the WASM linking process
+    // 4. Ignite Engine & Hand over the ROM
+    GBA_Engine.init();
+    GBA_Engine.loadRom(pendingRomFile);
+    
+    // 5. Signal CoreBridge
     if (typeof CoreBridge !== 'undefined' && CoreBridge.linkEngine) {
         CoreBridge.linkEngine();
     }
 };
-
-// Close menu if clicking outside
-document.addEventListener('click', (e) => {
-    if (DOM.menuPanel && !DOM.menuPanel.contains(e.target) && e.target !== DOM.menuBtn) {
-        DOM.menuPanel.classList.remove('open');
-    }
-});
 
 // 1.3 - Modal Management
 function openModal(modal) {
@@ -141,20 +149,6 @@ DOM.dummyLoader.addEventListener('change', (e) => {
     DOM.playOverlay.classList.add('active');
 });
 
-// Step C: User clicks "PRESS PLAY". We hide the overlay, trigger full screen, 
-// and hand the file over to the emulation engine (to be built in later sections).
-DOM.btnStartGame.addEventListener('click', () => {
-    DOM.playOverlay.classList.remove('active');
-    
-    // Attempt to lock screen to landscape and go fullscreen (Mobile/Desktop QoL)
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(err => console.log("Fullscreen blocked:", err));
-    }
-    
-    console.log(`[System] Play button clicked! Handing ${pendingRomFile.name} to the Engine...`);
-    
-    // Note: The actual DataTransfer to the emulator engine will go here in Section 4.
-});
 /* =========================================================
    SECTION 2: INDEXEDDB STORAGE & GAME LIBRARY
    ========================================================= */
@@ -584,16 +578,6 @@ const GBA_Engine = {
     }
 };
 
-// 4.5 - Connect the "PRESS PLAY" Button to the Engine
-document.getElementById('btn-start-game').addEventListener('click', () => {
-    // pendingRomFile comes from Section 1/2
-    if (pendingRomFile) {
-        GBA_Engine.init();
-        GBA_Engine.loadRom(pendingRomFile);
-    } else {
-        console.error("[Engine] Boot failed: No cartridge inserted.");
-    }
-});
 /* =========================================================
    SECTION 5: THE VIDEO RENDERING PIPELINE
    ========================================================= */
