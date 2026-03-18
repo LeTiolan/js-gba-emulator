@@ -810,10 +810,11 @@ const CoreBridge = {
                 // Try to apply it immediately
                 applyFaultUI();
 
-                // If the elements weren't ready, try again in 100ms
-                setTimeout(applyFaultUI, 100);
-            });
-
+             // If the elements weren't ready, try again in 100ms
+            setTimeout(applyFaultUI, 100);
+        });
+    }, // <--- YOU MUST ADD THIS BRACE AND COMMA
+   
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
         let progress = 0;
