@@ -464,17 +464,54 @@ const GBA_Engine = {
     loadRom: function(file) {
         console.log(`[Engine] Reading binary payload: ${file.name}`);
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const romBuffer = new Uint8Array(e.target.result);
-            console.log(`[Engine] ROM loaded into memory. Size: ${romBuffer.length} bytes`);
-            
-            // This is where we will pass 'romBuffer' into the WASM core module
-            // e.g., this.core.loadROM(romBuffer);
-            
-            this.start();
-        };
-        reader.readAsArrayBuffer(file);
+        try {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const romBuffer = new Uint8Array(e.target.result);
+                    console.log(`[Engine] ROM loaded into memory. Size: ${romBuffer.length} bytes`);
+                    
+                    if (!window.EmulatorCore) {
+                        alert("SYSTEM ERROR: The Emulator Core hasn't loaded yet!");
+                        return;
+                    }
+
+                    // 1. Inject the ROM into the virtual file system
+                    window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
+                    
+                    // 2. Prepare the Canvas
+                    const canvas = document.getElementById('screen');
+                    if (canvas) {
+                        canvas.style.display = "block";
+                        canvas.focus(); // Forces keyboard inputs to go to the game
+                    } else {
+                        alert("HTML ERROR: I cannot find the <canvas id='screen'> tag!");
+                    }
+
+                    // 3. Hide the menus (Using your actual DOM IDs)
+                    const menuIDs = ['play-overlay', 'menu-panel', 'theme-fade-overlay'];
+                    menuIDs.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = "none";
+                    });
+                    
+                    // Fallback just in case you use a different wrapper class
+                    const backupMenu = document.querySelector('.qz-container') || document.querySelector('main');
+                    if (backupMenu) backupMenu.style.display = "none";
+
+                    // 4. BOOT THE ENGINE (Replaces your empty 'this.start()')
+                    window.EmulatorCore.callMain(['/game.gba']);
+                    
+                } catch (innerErr) {
+                    // This will pop up on your screen if the emulator crashes
+                    alert("BOOT CRASH: " + innerErr.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } catch (outerErr) {
+            // This will pop up if the browser fails to read the file
+            alert("FILE LOAD CRASH: " + outerErr.message);
+        }
     },
 
     // 4.4 - The 60FPS Main Loop
