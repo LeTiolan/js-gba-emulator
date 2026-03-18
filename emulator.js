@@ -933,59 +933,33 @@ const CoreBridge = {
     linkEngine: function() {
         // Ensure the core is actually injected before trying to start
         if (!this.isCoreLoaded || !window.mGBA) {
-            console.error("mGBA Core not ready.");
+            alert("CRITICAL: mGBA function not found in window scope.");
             return;
         }
         
+        console.log("[System] Attempting to ignite mGBA WASM Core...");
+
         window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
-            noWorkers: true, // Matching the Single-Thread logic in 7.1
+            // We removed noWorkers here to match the Section 7.1 fix!
             locateFile: function(path) {
                 const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
-                // Force the engine to find the .wasm file at your specific URL
                 if (path.endsWith('.wasm')) return baseUrl + 'core.wasm';
                 return path;
             }
         }).then(function(Module) {
+            // SUCCESS! We save the engine to the global window
             window.EmulatorCore = Module;
             
-            // Logic for your "Choose File" button
-            const fileInput = document.querySelector('input[type="file"]');
-            if (!fileInput) return;
-
-            fileInput.addEventListener('change', function(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const romBuffer = new Uint8Array(e.target.result);
-                    
-                    // Save the ROM into the emulator's virtual memory
-                    window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
-                    
-                    // 1. Show the GBA Screen (CSS handles the black bars)
-                    const canvas = document.getElementById('screen');
-                    if (canvas) canvas.style.display = "block";
-
-                    // 2. Hide the UI/Menu container so the game is fullscreen
-                    // This targets your main wrapper class
-                    const menu = document.querySelector('.qz-container') || document.querySelector('main');
-                    if (menu) menu.style.display = "none";
-                    
-                    // 3. BOOT THE GAME
-                    window.EmulatorCore.callMain(['/game.gba']);
-                };
-                reader.readAsArrayBuffer(file);
-            });
+            // This alert is our proof that the engine is alive
+            alert("SUCCESS: Emulator Engine Linked & Ready!");
+            
+            console.log("[System] mGBA Core successfully linked and standing by.");
+            
         }).catch(function(err) {
-            // Error reporting logic
-            const statusEl = document.getElementById('qz-status');
-            if (statusEl) {
-                statusEl.innerText = "CRASH: " + err.message;
-                statusEl.style.color = "#ff3333";
-            }
+            // This will tell us if the Web Workers or WASM file crashed
+            alert("ENGINE LINK ERROR: " + err.message);
             console.error("Engine Link Error:", err);
         });
     }
