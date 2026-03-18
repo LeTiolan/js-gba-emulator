@@ -749,7 +749,15 @@ const CoreBridge = {
         `;
         document.head.appendChild(style);
 
-       loader.innerHTML = `
+    loader.innerHTML = `
+            <div class="qz-title-container">
+                <div id="qz-text" class="qz-title">SYSTEM LOADING</div>
+                <div id="qz-dots-container" class="qz-dots">
+                    <div class="qz-dot"></div>
+                    <div class="qz-dot"></div>
+                    <div class="qz-dot"></div>
+                </div>
+            </div>
             <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
             <div class="qz-data-row">
                 <div id="qz-pct" class="qz-pct">0%</div>
