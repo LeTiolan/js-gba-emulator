@@ -929,18 +929,12 @@ linkEngine: function() {
                     GBA_Engine.loadRom(pendingRomFile);
                 }
 
-                const fill = document.getElementById('mini-bar-fill');
-                const status = document.getElementById('engine-status');
-                if (fill) fill.style.width = '100%';
-                if (status) status.innerText = 'CORE IGNITED';
-
-                setTimeout(() => {
-                    const loader = document.getElementById('engine-loader');
-                    if (loader) {
-                        loader.style.opacity = '0';
-                        setTimeout(() => { loader.style.display = 'none'; }, 500);
-                    }
-                }, 800);
+              // Target the True Pixel Loader
+                const qzLoader = document.getElementById('quartz-loader');
+                if (qzLoader) {
+                    qzLoader.style.opacity = '0';
+                    setTimeout(() => { qzLoader.style.display = 'none'; }, 800);
+                }
 
             }).catch(function(err) {
                 alert("ENGINE LINK ERROR: " + err.message);
