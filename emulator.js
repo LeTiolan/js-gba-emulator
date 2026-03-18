@@ -965,15 +965,23 @@ setTimeout(() => {
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
         // 2. The Safety Buffer: Wrapped around the actual ignition call
-        setTimeout(() => {
+      setTimeout(() => {
             window.mGBA({
+                // Ensure this matches your HTML id="screen"
                 canvas: document.getElementById('screen'),
                 mainScriptUrlOrBlob: window.coreBlobUrl, 
+                
+                // This is the "Magic Hook" that stops the [object Event] crash
+                onRuntimeInitialized: function() {
+                    console.log("[System] WASM Runtime fully initialized.");
+                },
+
                 locateFile: function(path) {
                     if (path.endsWith('.wasm')) return window.wasmBlobUrl;
                     return 'https://letiolan.github.io/Quartz-GBA/' + path;
                 }
             }).then(function(Module) {
+                // ... (rest of your existing .then code)
                 window.EmulatorCore = Module;
                 window.isCoreLoaded = true;
 
