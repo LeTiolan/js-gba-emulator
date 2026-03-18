@@ -813,11 +813,11 @@ const CoreBridge = {
                 return response.text();
             })
             .then(code => {
-            let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
+           let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
                 
-                // THE WORKER KILLER: Stops the Line 1561 crash
-                const workerFix = "var Worker = undefined; var Module = { 'noWorkers': true, 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
-                safeCode = workerFix + safeCode;
+               // THE FIX: We fixed the import bug, so we can let the Workers live!
+               const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
+               safeCode = moduleSetup + safeCode;
                 
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
