@@ -878,18 +878,17 @@ const CoreBridge = {
     linkEngine: function() {
         console.log("[System] Attempting Compatibility Ignition...");
 
-        // Force-check if the browser even allows the memory type we need
+        // Check if the school filter has stripped our high-speed memory
         if (typeof SharedArrayBuffer === 'undefined') {
-            console.warn("SharedArrayBuffer blocked. Attempting fallback...");
+            console.warn("CRITICAL: SharedArrayBuffer is blocked by the network/browser.");
         }
 
         window.mGBA({
             canvas: document.getElementById('screen'),
-            // Use standard relative paths to avoid CORS "Origin" triggers
+            // Using absolute minimum relative paths
             mainScriptUrlOrBlob: 'core.js',
             locateFile: function(path) {
-                if (path.endsWith('.wasm')) return 'core.wasm';
-                return path;
+                return path.endsWith('.wasm') ? 'core.wasm' : path;
             }
         }).then(function(Module) {
             window.EmulatorCore = Module;
@@ -897,11 +896,11 @@ const CoreBridge = {
             if (window.pendingRomFile) GBA_Engine.loadRom(window.pendingRomFile);
         }).catch(function(err) {
             console.error("Ignition Error:", err);
-            // This turns the [object Event] into a readable warning
-            const isFilterBlock = (typeof err === 'object');
-            const detail = isFilterBlock ? "Network/Security Block (District Filter)" : err;
+            // If err is an empty object, it's a confirmed District Filter block
+            const isObject = (typeof err === 'object' && !err.message);
+            const detail = isObject ? "Security Headers Stripped (School Filter)" : (err.message || err);
             
-            alert("ENGINE LINK ERROR: " + detail + "\n\nTry opening this in a 'Chrome Incognito' window.");
+            alert("ENGINE LINK ERROR: " + detail + "\n\nTry a Phone Hotspot to confirm.");
         });
     }
 };
