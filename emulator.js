@@ -775,7 +775,8 @@ const CoreBridge = {
         `;
         document.body.appendChild(loader);
 
-     // 7.1 - Load mGBA Core (Bypassing strict module security)
+   // 7.1 - Load mGBA Core (Bypassing strict module security)
+    injectCore: function(loader) {
         fetch('core.js')
             .then(response => {
                 if (!response.ok) throw new Error("File not found");
@@ -784,35 +785,41 @@ const CoreBridge = {
             .then(code => {
                 // 1. Fix the relative URL trap
                 let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
-               safeCode = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'print': function(t) { console.log(t); }, 'printErr': function(t) { console.error(t); }, 'mainScriptUrlOrBlob': window.coreBlobUrl, 'pthreadMainThread': false };\n" + safeCode
+
+                // 2. THE WORKER KILLER: We force Worker to be undefined and noWorkers to be true.
+                // This prevents the Line 1561 crash by stopping the engine from even trying to use threads.
+                const workerFix = "var Worker = undefined; var Module = { 'noWorkers': true, 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
+                safeCode = workerFix + safeCode;
                 
-                // 2. Nuke ALL export keywords so the Worker threads don't crash
+                // 3. Nuke ALL export keywords so the engine doesn't panic
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
 
-                // 3. Package this clean code into a virtual file (Blob) for the engine to use
+                // 4. Package this clean code into a virtual file (Blob)
                 const blob = new Blob([safeCode], { type: 'application/javascript' });
                 window.coreBlobUrl = URL.createObjectURL(blob);
                 
-                // 4. Trigger your custom loading UI
+                // 5. Trigger your custom loading UI
                 this.waitForEngine(loader);
 
                 setTimeout(() => {
                     const script = document.createElement('script');
                     script.type = 'module'; 
-                    script.textContent = safeCode + "\nwindow.mGBA = mGBA;"; 
+                    // We append mGBA to the window so Section 7.3 can see it
+                    script.textContent = safeCode + "\nwindow.mGBA = mGBA; this.isCoreLoaded = true;"; 
                     document.body.appendChild(script);
+                    this.isCoreLoaded = true; // Mark as ready
                 }, 500);
             })
             .catch(err => {
-                // Your custom error screen logic!
+                // Your custom error screen logic preserved exactly!
                 document.getElementById('qz-text').innerHTML = "SYSTEM FAULT";
                 document.getElementById('qz-bar').style.background = "#ff3333";
                 document.getElementById('qz-status').innerText = "CORE MISSING";
                 document.getElementById('qz-status').style.color = "#ff3333";
                 document.getElementById('qz-dots-container').style.display = "none";
             });
-       },
+    },
 
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
@@ -885,20 +892,26 @@ const CoreBridge = {
 
 // 7.3 - Link the Engine to our UI
     linkEngine: function() {
-        if (!this.isCoreLoaded) return;
+        // Ensure the core is actually injected before trying to start
+        if (!this.isCoreLoaded || !window.mGBA) {
+            console.error("mGBA Core not ready.");
+            return;
+        }
         
         window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
-            noWorkers: true, 
+            noWorkers: true, // Matching the Single-Thread logic in 7.1
             locateFile: function(path) {
                 const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
+                // Force the engine to find the .wasm file at your specific URL
                 if (path.endsWith('.wasm')) return baseUrl + 'core.wasm';
                 return path;
             }
         }).then(function(Module) {
             window.EmulatorCore = Module;
             
+            // Logic for your "Choose File" button
             const fileInput = document.querySelector('input[type="file"]');
             if (!fileInput) return;
 
@@ -909,29 +922,35 @@ const CoreBridge = {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const romBuffer = new Uint8Array(e.target.result);
+                    
+                    // Save the ROM into the emulator's virtual memory
                     window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
                     
-                    // 1. Show the canvas
+                    // 1. Show the GBA Screen (CSS handles the black bars)
                     const canvas = document.getElementById('screen');
                     if (canvas) canvas.style.display = "block";
 
-                    // 2. Hide the UI (Targeting common IDs)
-                    const menu = document.querySelector('.qz-container') || document.getElementById('qz-status')?.parentElement;
+                    // 2. Hide the UI/Menu container so the game is fullscreen
+                    // This targets your main wrapper class
+                    const menu = document.querySelector('.qz-container') || document.querySelector('main');
                     if (menu) menu.style.display = "none";
                     
-                    // 3. Start the game
+                    // 3. BOOT THE GAME
                     window.EmulatorCore.callMain(['/game.gba']);
                 };
                 reader.readAsArrayBuffer(file);
             });
         }).catch(function(err) {
+            // Error reporting logic
             const statusEl = document.getElementById('qz-status');
             if (statusEl) {
                 statusEl.innerText = "CRASH: " + err.message;
                 statusEl.style.color = "#ff3333";
             }
+            console.error("Engine Link Error:", err);
         });
     }
 };
 
+// This line kicks off the whole 7.1 process
 CoreBridge.injectCore();
