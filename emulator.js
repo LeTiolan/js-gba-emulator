@@ -811,13 +811,14 @@ const CoreBridge = {
             })
            .then(buffer => {
                 // Store the binary in a local memory URL
-                window.wasmBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
-                return fetch('core.js');
-            })
-            .then(res => res.text())
-            .then(code => {
-                // 1. Progress: Engine Downloaded
-                const bar = document.getElementById('qz-bar');
+              window.wasmBlobUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/wasm' }));
+            return fetch('core.js');
+        })
+        .then(res => res.text())
+        .then(code => {
+     
+            // 1. Progress: Engine Downloaded
+            const bar = document.getElementById('qz-bar');
                 const pct = document.getElementById('qz-pct');
                 const status = document.getElementById('qz-status');
                 
