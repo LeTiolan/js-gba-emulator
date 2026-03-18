@@ -784,6 +784,7 @@ const CoreBridge = {
             .then(code => {
                 // 1. Fix the relative URL trap
                 let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
+               safeCode = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'print': function(t) { console.log(t); }, 'printErr': function(t) { console.error(t); }, 'mainScriptUrlOrBlob': window.coreBlobUrl, 'pthreadMainThread': false };\n" + safeCode
                 
                 // 2. Nuke ALL export keywords so the Worker threads don't crash
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
@@ -882,22 +883,19 @@ const CoreBridge = {
         }, 100); 
     },
 
-// 7.3 - Link the Engine to our UI
+// 7.3 - Link the Engine to our UI (Single-Threaded Mode)
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
         window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
+            // This is the critical change for Single-Thread mode:
+            noWorkers: true, 
             locateFile: function(path) {
                 const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
-                
-                // Force it to the EXACT URL and EXACT file name you chose
                 if (path.endsWith('.wasm')) {
                     return baseUrl + 'core.wasm';
-                }
-                if (path.endsWith('.worker.js')) {
-                    return baseUrl + 'core.worker.js';
                 }
                 return path;
             }
