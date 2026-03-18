@@ -1,0 +1,2 @@
+// engine-data.js
+window.WASM_BINARY_STRING = "PASTE_YOUR_GIANT_BASE64_STRING_HERE";
