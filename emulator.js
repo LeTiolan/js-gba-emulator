@@ -816,7 +816,7 @@ const CoreBridge = {
            let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
                 
                // THE FIX: We fixed the import bug, so we can let the Workers live!
-               const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
+              const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return new URL(p, window.location.href).href; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
                safeCode = moduleSetup + safeCode;
                 
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
@@ -943,9 +943,8 @@ const CoreBridge = {
         window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
-            locateFile: function(path) {
-                if (path.endsWith('.wasm')) return './core.wasm';
-                return path;
+          locateFile: function(path) {
+                return new URL(path, window.location.href).href;
             }
         }).then(function(Module) {
             window.EmulatorCore = Module;
