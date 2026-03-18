@@ -887,73 +887,9 @@ const CoreBridge = {
             });
     },
    
-    // 7.2 - Stable UI Update Logic
+   // 7.2 - Legacy Silencer (Handled by 7.1)
     waitForEngine: function(loader) {
-        let progress = 0;
-        let ticks = 0;
-        let estimatedSeconds = 12; 
-        
-        const checkInterval = setInterval(() => {
-            ticks++;
-            
-            if (ticks % 10 === 0 && estimatedSeconds > 1) {
-                estimatedSeconds--;
-            }
-            
-            progress += (99.9 - progress) * 0.015; 
-            let displayPct = Math.floor(progress);
-            
-            document.getElementById('qz-bar').style.width = progress + '%';
-            document.getElementById('qz-pct').innerText = displayPct + '%';
-
-            const etaEl = document.getElementById('qz-eta');
-            const statusEl = document.getElementById('qz-status');
-
-            if (etaEl) {
-                if (displayPct < 98) {
-                    etaEl.innerText = `ETA: ~00:${estimatedSeconds.toString().padStart(2, '0')} SEC`;
-                } else {
-                    etaEl.innerText = `ETA: < 1 SEC (AWAITING CPU)`;
-                    etaEl.style.color = "#f4f4f4";
-                }
-            }
-
-            if (statusEl) {
-                if (displayPct < 40) statusEl.innerText = "DOWNLOADING ENGINE DATA";
-                else if (displayPct < 75) statusEl.innerText = "ASSEMBLING CODEBLOCKS";
-                else if (displayPct < 98) statusEl.innerText = "MOUNTING FILE SYSTEM";
-                else statusEl.innerText = "COMPILING WEBASSEMBLY (CORE LOCKED)";
-            }
-
-            // Engine completely loaded
-            if (typeof window.mGBA === 'function') {
-                clearInterval(checkInterval); 
-                
-                document.getElementById('qz-bar').style.width = '100%';
-                document.getElementById('qz-pct').innerText = '100%';
-                if (etaEl) etaEl.innerText = "ETA: 00:00 SEC (RESOLVED)";
-                
-                if (statusEl) {
-                    statusEl.innerText = "SYSTEM OPTIMAL";
-                    statusEl.style.color = "#f4f4f4";
-                }
-                
-                document.getElementById('qz-dots-container').style.display = "none";
-                document.getElementById('qz-text').innerHTML = "SYSTEM READY";
-                
-                document.getElementById('qz-action').innerHTML = "<button class='qz-btn' id='enterBtn'>[ INITIALIZE ]</button>";
-                
-                document.getElementById('enterBtn').addEventListener('click', () => {
-                    // Instantly disable pointer events so the UI underneath is clickable immediately
-                    loader.style.pointerEvents = 'none'; 
-                    loader.style.opacity = '0';
-                    setTimeout(() => { loader.style.display = 'none'; }, 800);
-                    
-                    this.isCoreLoaded = true;
-                    this.linkEngine(); 
-                });
-            }
-        }, 100); 
+        console.log("[System] Engine sync handled by InjectCore.");
     },
 
 linkEngine: function() {
