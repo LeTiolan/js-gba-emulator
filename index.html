@@ -2,18 +2,16 @@
 <html lang="en">
 <head>
     <script src="coi-serviceworker.js"></script>
-    
+
+    <script src="core.js"></script>
+
     <script>
-    // Improved error catcher to decode the "[object Event]"
     window.onerror = function(message, source, lineno, colno, error) {
-        let displayMsg = message;
-        if (typeof message === 'object') {
-            displayMsg = "Security/Path Blocked. Try a 'Hard Refresh' (Ctrl+F5).";
-        }
-        
+        let msg = message;
+        if (typeof message === 'object') msg = "Browser Security Block. Try Ctrl+F5 (Hard Refresh).";
         const errorLog = document.createElement('div');
         errorLog.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:red; color:white; z-index:9999; padding:20px; font-weight:bold; font-family:monospace;';
-        errorLog.innerText = "SYSTEM CRASH: " + displayMsg;
+        errorLog.innerText = "SYSTEM CRASH: " + msg;
         document.body.appendChild(errorLog);
     };
     </script>
