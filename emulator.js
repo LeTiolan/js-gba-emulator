@@ -80,12 +80,14 @@ DOM.btnStartGame.onclick = function() {
         loader.style.opacity = '1';
     }
     
-    // 4. Initialize Hardware but wait for ignition to load ROM
+  // 4. Initialize Hardware
     GBA_Engine.init();
     
-    // 5. Signal CoreBridge to ignite the WASM
-    if (typeof CoreBridge !== 'undefined' && CoreBridge.linkEngine) {
+    // 5. Only link if the core is actually ready, otherwise let the System Loader handle it
+    if (window.isCoreLoaded && typeof CoreBridge !== 'undefined') {
         CoreBridge.linkEngine();
+    } else {
+        console.log("[System] Core not ready yet. System Loader will auto-bridge on completion.");
     }
 };
 
@@ -239,7 +241,12 @@ function refreshLibraryUI() {
             btn.textContent = `🕹️ ${cleanName}`;
             
             // 2.4 - Clicking a game in the library
-            btn.addEventListener('click', () => {
+         btn.addEventListener('click', () => {
+                // BLOCKER: Prevent clicking if the engine is still loading
+                if (!window.isCoreLoaded) {
+                    alert("System is still igniting! Please wait.");
+                    return;
+                }
                 // Hook into the pendingRomFile variable from Section 1
                 pendingRomFile = rom.data; 
                 console.log(`[Library] Selected ${rom.name} from database.`);
@@ -824,7 +831,7 @@ const CoreBridge = {
             })
             .then(code => {
           // FIX 1: Use a safety check for 'window' so workers don't crash
-                let safeCode = code.replace(/import\.meta\.url/g, "(typeof window !== 'undefined' ? window.location.href : self.location.href)");
+             let safeCode = code.replace(/import\.meta\.url/g, "'https://letiolan.github.io/Quartz-GBA/core.js'");
                 
                 // FIX 2: Updated moduleSetup (Removed 'window.coreBlobUrl' reference to prevent worker crashes)
                const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return window.wasmBlobUrl; return 'https://letiolan.github.io/Quartz-GBA/' + p; } };\n";
@@ -832,23 +839,25 @@ const CoreBridge = {
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
 
-              // Add the Module configuration to the top of the engine code
-const finalEngineCode = moduleSetup + safeCode;
-
-// This glues your 'moduleSetup' config to the front of the 'safeCode' engine
+// 1. Merge the configuration and the engine code (ONLY ONCE)
 const finalEngineCode = moduleSetup + "\n" + safeCode;
+
+// 2. Create the memory blob
 const blob = new Blob([finalEngineCode], { type: 'application/javascript' });
 window.coreBlobUrl = URL.createObjectURL(blob);
                 
-                this.waitForEngine(loader);
+this.waitForEngine(loader);
 
-                setTimeout(() => {
-                    const script = document.createElement('script');
-                    script.type = 'module'; 
-                 script.textContent = safeCode + "\nwindow.mGBA = mGBA; window.isCoreLoaded = true;";
-                    document.body.appendChild(script);
-                    this.isCoreLoaded = true;
-                }, 500);
+// 3. THIS IS THE SETTIMEOUT TO FIX
+setTimeout(() => {
+    const script = document.createElement('script');
+    script.type = 'text/javascript'; // Changed to bypass Chromebook module blocks
+    
+    // CRITICAL: Use finalEngineCode here so the engine sees your config!
+    script.textContent = finalEngineCode + "\nwindow.mGBA = mGBA; window.isCoreLoaded = true;";
+    
+    document.body.appendChild(script);
+}, 500);
             })
           .catch(err => {
                 console.error("Core loading failed:", err);
@@ -945,13 +954,15 @@ window.coreBlobUrl = URL.createObjectURL(blob);
     },
 
 // 7.3 - Link the Engine to our UI (The Master Bridge)
-    linkEngine: function() {
-        if (!this.isCoreLoaded || !window.mGBA) {
-            const statusBox = document.getElementById('engine-status');
-            if (statusBox) statusBox.innerText = "ERROR: CORE NOT FOUND";
-            console.error("[System] mGBA function not found during ignition.");
+   linkEngine: function() {
+        // If mGBA is missing, wait 200ms and try again (up to 5 times)
+        if (!window.mGBA) {
+            console.log("[System] mGBA missing, retrying link...");
+            setTimeout(() => this.linkEngine(), 200);
             return;
         }
+        
+        console.log("[System] Attempting to ignite mGBA WASM Core...");
         
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
