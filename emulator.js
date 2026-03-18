@@ -878,15 +878,16 @@ const CoreBridge = {
     linkEngine: function() {
         console.log("[System] Attempting to ignite mGBA WASM Core...");
 
-        // This detects if we are in a subfolder (like /Quartz-GBA/)
-        const pathArray = window.location.pathname.split('/');
-        pathArray.pop(); // Remove index.html
-        const baseFolder = pathArray.join('/');
+        // Safety check: Is window.mGBA even loaded?
+        if (typeof window.mGBA !== 'function') {
+            alert("FATAL: core.js did not load. Check your GitHub file names!");
+            return;
+        }
 
         window.mGBA({
             canvas: document.getElementById('screen'),
             
-            // Reference files relative to the current folder
+            // Using relative paths allows the Service Worker to intercept correctly
             mainScriptUrlOrBlob: 'core.js', 
             locateFile: function(path) {
                 if (path.endsWith('.wasm')) return 'core.wasm';
@@ -904,8 +905,8 @@ const CoreBridge = {
 
         }).catch(function(err) {
             console.error("Critical Engine Failure:", err);
-            // If it's still an object, it's a browser security rejection
-            const msg = (typeof err === 'object') ? "Worker Blocked by Browser Security" : err;
+            // If it's an object, it's a browser security rejection (COI failure)
+            const msg = (typeof err === 'object') ? "SharedArrayBuffer Blocked by Browser. Refresh again." : err;
             alert("ENGINE LINK ERROR: " + msg);
         });
     }
