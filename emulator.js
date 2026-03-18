@@ -867,24 +867,14 @@ const CoreBridge = {
 
                     // START THE ENGINE
                     this.linkEngine(); 
-                }, 500);
+               }, 500);
             })
             .catch(err => {
                 console.error("Core loading failed:", err);
-                const statusEl = document.getElementById('qz-status');
-                if (statusEl) statusEl.innerText = "FATAL: " + err.message;
-            });
-    },
-            })
-          .catch(err => {
-                console.error("Core loading failed:", err);
-                
-                // Function to apply the 'Failure' look safely
-               const applyFaultUI = () => {
+                const applyFaultUI = () => {
                     const textEl = document.getElementById('qz-text');
                     const barEl = document.getElementById('qz-bar');
                     const statusEl = document.getElementById('qz-status');
-
                     if (textEl) textEl.innerHTML = "SYSTEM FAULT";
                     if (barEl) barEl.style.background = "#ff3333";
                     if (statusEl) {
@@ -892,11 +882,10 @@ const CoreBridge = {
                         statusEl.style.color = "#ff3333";
                     }
                 };
-
                 applyFaultUI();
                 setTimeout(applyFaultUI, 100);
             });
-    }, // <--- YOU MUST ADD THIS BRACE AND COMMA
+    },
    
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
