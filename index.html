@@ -2,19 +2,21 @@
 <html lang="en">
 <head>
     <script src="coi-serviceworker.js"></script>
-
-    <script src="core.js"></script>
-
+    
     <script>
+    // 2. ADVANCED DIAGNOSTIC ERROR CATCHER
     window.onerror = function(message, source, lineno, colno, error) {
-        let msg = message;
-        if (typeof message === 'object') msg = "Browser Security Block. Try Ctrl+F5 (Hard Refresh).";
-        const errorLog = document.createElement('div');
-        errorLog.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:red; color:white; z-index:9999; padding:20px; font-weight:bold; font-family:monospace;';
-        errorLog.innerText = "SYSTEM CRASH: " + msg;
-        document.body.appendChild(errorLog);
+        console.error("Caught Global Error:", message);
+        if (message.includes("Object Event") || typeof message === 'object') {
+            message = "NETWORK BLOCK DETECTED: The school filter likely stopped core.wasm from loading.";
+        }
+        const log = document.createElement('div');
+        log.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:#ff0000; color:white; z-index:10000; padding:20px; font-family:monospace;';
+        log.innerHTML = `<b>SYSTEM CRASH:</b> ${message}<br><small>Try: Ctrl+F5 or Chrome Incognito</small>`;
+        document.body.appendChild(log);
     };
     </script>
+    </head>
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
