@@ -776,7 +776,7 @@ const CoreBridge = {
                 return response.text();
             })
             .then(code => {
-               let safeCode = "var Worker = undefined; var Module = { 'noWorkers': true }; " + code.replace(/import\.meta\.url/g, 'window.location.href');
+            let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
                 
                 // THE WORKER KILLER: Stops the Line 1561 crash
                 const workerFix = "var Worker = undefined; var Module = { 'noWorkers': true, 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
