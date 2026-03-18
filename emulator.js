@@ -949,7 +949,7 @@ const CoreBridge = {
             }
         }).then(function(Module) {
             window.EmulatorCore = Module;
-            CoreBridge.isCoreLoaded = true; 
+           window.isCoreLoaded = true;
 
             // SUCCESS: Engine is online. Now load the ROM.
             if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
