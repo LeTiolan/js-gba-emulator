@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
     <script>
-    window.onerror = function(message, source, lineno, colno, error) {
-        const errorLog = document.createElement('div');
-        errorLog.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:red; color:white; z-index:9999; padding:20px; font-weight:bold;';
-        errorLog.innerText = "SYSTEM CRASH: " + message;
-        document.body.appendChild(errorLog);
-    };
+   window.onerror = function(message, source, lineno, colno, error) {
+    const errorLog = document.createElement('div');
+    errorLog.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:red; color:white; z-index:9999; padding:20px; font-weight:bold; font-family:monospace;';
+    
+    // This part fixes the [object Event] mystery
+    let msg = message;
+    if (typeof message === 'object') msg = "404: FILE NOT FOUND. Check your GitHub filenames!";
+    
+    errorLog.innerText = "SYSTEM CRASH: " + msg;
+    document.body.appendChild(errorLog);
+};
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
