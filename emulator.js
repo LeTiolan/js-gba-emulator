@@ -883,20 +883,17 @@ const CoreBridge = {
         }, 100); 
     },
 
-// 7.3 - Link the Engine to our UI (Single-Threaded Mode)
+// 7.3 - Link the Engine to our UI
     linkEngine: function() {
         if (!this.isCoreLoaded) return;
         
         window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
-            // This is the critical change for Single-Thread mode:
             noWorkers: true, 
             locateFile: function(path) {
                 const baseUrl = "https://letiolan.github.io/Quartz-GBA/";
-                if (path.endsWith('.wasm')) {
-                    return baseUrl + 'core.wasm';
-                }
+                if (path.endsWith('.wasm')) return baseUrl + 'core.wasm';
                 return path;
             }
         }).then(function(Module) {
@@ -913,11 +910,17 @@ const CoreBridge = {
                 reader.onload = (e) => {
                     const romBuffer = new Uint8Array(e.target.result);
                     window.EmulatorCore.FS.writeFile('/game.gba', romBuffer);
-                    window.EmulatorCore.callMain(['/game.gba']);
                     
-                    if (typeof DOM !== 'undefined' && DOM.playOverlay) {
-                        DOM.playOverlay.style.display = 'none';
-                    }
+                    // 1. Show the canvas
+                    const canvas = document.getElementById('screen');
+                    if (canvas) canvas.style.display = "block";
+
+                    // 2. Hide the UI (Targeting common IDs)
+                    const menu = document.querySelector('.qz-container') || document.getElementById('qz-status')?.parentElement;
+                    if (menu) menu.style.display = "none";
+                    
+                    // 3. Start the game
+                    window.EmulatorCore.callMain(['/game.gba']);
                 };
                 reader.readAsArrayBuffer(file);
             });
