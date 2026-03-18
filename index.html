@@ -1,22 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quartz GBA</title>
+
     <script src="coi-serviceworker.js"></script>
-    
+
+    <script src="engine-data.js"></script>
+
+    <script src="core.js"></script>
+
     <script>
-    // 2. ADVANCED DIAGNOSTIC ERROR CATCHER
     window.onerror = function(message, source, lineno, colno, error) {
         console.error("Caught Global Error:", message);
-        if (message.includes("Object Event") || typeof message === 'object') {
-            message = "NETWORK BLOCK DETECTED: The school filter likely stopped core.wasm from loading.";
+        
+        // Decoding the [object Event] for the Stealth Build
+        let displayMsg = message;
+        if (typeof message === 'object' || message.includes("Object Event")) {
+            displayMsg = "STEALTH FAILED: The school network is stripping security headers. Try Chrome Incognito.";
         }
+        
         const log = document.createElement('div');
-        log.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:#ff0000; color:white; z-index:10000; padding:20px; font-family:monospace;';
-        log.innerHTML = `<b>SYSTEM CRASH:</b> ${message}<br><small>Try: Ctrl+F5 or Chrome Incognito</small>`;
+        log.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:#ff0000; color:white; z-index:10000; padding:20px; font-family:monospace; box-sizing:border-box;';
+        log.innerHTML = `<b>SYSTEM CRASH:</b> ${displayMsg}<br><small>Verification: Check if engine-data.js exists in GitHub.</small>`;
         document.body.appendChild(log);
     };
     </script>
-    </head>
+
+    <script src="emulator.js" defer></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
