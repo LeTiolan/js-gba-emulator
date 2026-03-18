@@ -830,7 +830,7 @@ const CoreBridge = {
                 setTimeout(() => {
                     const script = document.createElement('script');
                     script.type = 'module'; 
-                    script.textContent = safeCode + "\nwindow.mGBA = mGBA; this.isCoreLoaded = true;"; 
+                 script.textContent = safeCode + "\nwindow.mGBA = mGBA; window.isCoreLoaded = true;";
                     document.body.appendChild(script);
                     this.isCoreLoaded = true;
                 }, 500);
