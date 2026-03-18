@@ -384,3 +384,46 @@ canvas.filter-lcd { image-rendering: pixelated; opacity: 0.9; /* Advanced shader
     display: none;          /* Keeps it hidden until the game starts */
     image-rendering: pixelated; /* Keeps the GBA pixels crisp */
 }
+/* --- Engine Loader Overlay --- */
+#engine-loader {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: 'Courier New', monospace;
+}
+
+.engine-loader-content { text-align: center; width: 80%; }
+
+.mini-bar-bg {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-top: 15px;
+    overflow: hidden;
+}
+
+#mini-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: var(--play-btn); /* Using your existing green color */
+    transition: width 0.3s ease;
+}
+
+/* A simple spinning animation for the "thinking" phase */
+.loader-spinner {
+    width: 30px; height: 30px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top: 3px solid var(--play-btn);
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
