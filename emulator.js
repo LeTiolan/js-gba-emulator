@@ -887,10 +887,10 @@ linkEngine: function() {
             return;
         }
 
-        // --- NEW SAFETY LANDMARK: CANVAS CHECK ---
+     // --- NEW SAFETY LANDMARK: CANVAS CHECK ---
         const canvas = document.getElementById('screen');
-        if (!canvas || canvas.clientWidth === 0) {
-            console.log("[System] Canvas not rendered yet, retrying...");
+        if (!canvas) {
+            console.log("[System] Canvas not found in HTML, retrying...");
             setTimeout(() => this.linkEngine(), 100);
             return;
         }
