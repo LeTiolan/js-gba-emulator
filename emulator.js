@@ -948,13 +948,14 @@ const CoreBridge = {
                 if (path.endsWith('.wasm')) return baseUrl + 'core.wasm';
                 return path;
             }
-        }).then(function(Module) {
+      }).then(function(Module) {
             // SUCCESS! We save the engine to the global window
             window.EmulatorCore = Module;
             
-            // This alert is our proof that the engine is alive
-            alert("SUCCESS: Emulator Engine Linked & Ready!");
+            // NEW: Set the internal flag to true ONLY after the Module is fully initialized
+            CoreBridge.isCoreLoaded = true; 
             
+            alert("SUCCESS: Emulator Engine Linked & Ready!");
             console.log("[System] mGBA Core successfully linked and standing by.");
             
         }).catch(function(err) {
