@@ -929,12 +929,12 @@ const CoreBridge = {
         }, 100); 
     },
 
-// 7.3 - Link the Engine to our UI
+// 7.3 - Link the Engine to our UI (The Master Bridge)
     linkEngine: function() {
-        // Ensure the core is actually injected before trying to start
-       if (!this.isCoreLoaded || !window.mGBA) {
-            document.getElementById('engine-status').innerText = "ERROR: CORE NOT FOUND";
-            console.error("mGBA function not found.");
+        if (!this.isCoreLoaded || !window.mGBA) {
+            const statusBox = document.getElementById('engine-status');
+            if (statusBox) statusBox.innerText = "ERROR: CORE NOT FOUND";
+            console.error("[System] mGBA function not found during ignition.");
             return;
         }
         
@@ -943,42 +943,39 @@ const CoreBridge = {
         window.mGBA({
             canvas: document.getElementById('screen'),
             mainScriptUrlOrBlob: window.coreBlobUrl, 
-            // We removed noWorkers here to match the Section 7.1 fix!
-           locateFile: function(path) {
-                // Use a relative path so it works on GitHub Pages AND local testing
+            locateFile: function(path) {
                 if (path.endsWith('.wasm')) return './core.wasm';
                 return path;
             }
-   }).then(function(Module) {
+        }).then(function(Module) {
             window.EmulatorCore = Module;
             CoreBridge.isCoreLoaded = true; 
 
-            // Update the Quartz Loading Bar UI
+            // SUCCESS: Engine is online. Now load the ROM.
+            if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
+                console.log("[System] Ignition Success. Loading ROM...");
+                GBA_Engine.loadRom(pendingRomFile);
+            }
+
             const fill = document.getElementById('mini-bar-fill');
             const status = document.getElementById('engine-status');
-            
             if (fill) fill.style.width = '100%';
             if (status) status.innerText = 'CORE IGNITED';
 
-            // Wait a moment so the user sees the 100% bar, then fade out
             setTimeout(() => {
                 const loader = document.getElementById('engine-loader');
                 if (loader) {
                     loader.style.opacity = '0';
-                    setTimeout(() => {
-                        loader.style.display = 'none';
-                        console.log("[System] Engine Ready.");
-                    }, 500);
+                    setTimeout(() => { loader.style.display = 'none'; }, 500);
                 }
             }, 800);
             
         }).catch(function(err) {
-            // This will tell us if the Web Workers or WASM file crashed
             alert("ENGINE LINK ERROR: " + err.message);
-            console.error("Engine Link Error:", err);
+            console.error("Critical Engine Failure:", err);
         });
     }
 };
 
-// This line kicks off the whole 7.1 process
+// Start the Quartz system process
 CoreBridge.injectCore();
