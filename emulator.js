@@ -68,7 +68,7 @@ DOM.btnStartGame.onclick = function() {
     if (DOM.playOverlay) DOM.playOverlay.style.display = 'none';
     DOM.playOverlay.classList.remove('active');
     
-    // 2. Fullscreen Request (QoL)
+    // 2. Fullscreen Request
     if (document.documentElement.requestFullscreen) {
         document.documentElement.requestFullscreen().catch(() => {});
     }
@@ -80,11 +80,10 @@ DOM.btnStartGame.onclick = function() {
         loader.style.opacity = '1';
     }
     
-    // 4. Ignite Engine & Hand over the ROM
+    // 4. Initialize Hardware but wait for ignition to load ROM
     GBA_Engine.init();
-    GBA_Engine.loadRom(pendingRomFile);
     
-    // 5. Signal CoreBridge
+    // 5. Signal CoreBridge to ignite the WASM
     if (typeof CoreBridge !== 'undefined' && CoreBridge.linkEngine) {
         CoreBridge.linkEngine();
     }
