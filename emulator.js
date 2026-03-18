@@ -874,40 +874,38 @@ const CoreBridge = {
             });
     },
    
-// 7.2 - Ignite the Engine (GitHub Pages Optimized)
+// 7.2 - Ignite the Engine with Network Diagnostics
     linkEngine: function() {
-        console.log("[System] Attempting to ignite mGBA WASM Core...");
+        console.log("[System] Running Pre-Flight Network Check...");
 
-        // Safety check: Is window.mGBA even loaded?
-        if (typeof window.mGBA !== 'function') {
-            alert("FATAL: core.js did not load. Check your GitHub file names!");
-            return;
-        }
-
-        window.mGBA({
-            canvas: document.getElementById('screen'),
-            
-            // Using relative paths allows the Service Worker to intercept correctly
-            mainScriptUrlOrBlob: 'core.js', 
-            locateFile: function(path) {
-                if (path.endsWith('.wasm')) return 'core.wasm';
-                return path;
-            }
-            
-        }).then(function(Module) {
-            window.EmulatorCore = Module;
-            window.isCoreLoaded = true;
-
-            if (typeof pendingRomFile !== 'undefined' && pendingRomFile) {
-                console.log("[System] Ignition Success. Loading ROM...");
-                GBA_Engine.loadRom(pendingRomFile);
-            }
-
-        }).catch(function(err) {
-            console.error("Critical Engine Failure:", err);
-            // If it's an object, it's a browser security rejection (COI failure)
-            const msg = (typeof err === 'object') ? "SharedArrayBuffer Blocked by Browser. Refresh again." : err;
-            alert("ENGINE LINK ERROR: " + msg);
+        // Test if core.wasm is reachable before igniting
+        fetch('core.wasm', { method: 'HEAD' })
+            .then(response => {
+                if (!response.ok) throw new Error(`Network status: ${response.status}`);
+                console.log("[System] core.wasm is reachable. Proceeding to ignition.");
+                
+                return window.mGBA({
+                    canvas: document.getElementById('screen'),
+                    mainScriptUrlOrBlob: 'core.js',
+                    locateFile: (path) => path.endsWith('.wasm') ? 'core.wasm' : path
+                });
+            })
+            .then(Module => {
+                window.EmulatorCore = Module;
+                window.isCoreLoaded = true;
+                if (window.pendingRomFile) GBA_Engine.loadRom(window.pendingRomFile);
+            })
+            .catch(err => {
+                console.error("Ignition Failed:", err);
+                let reason = "The engine could not start.";
+                
+                // Logic to identify School District Blocks
+                if (err.message.includes("403") || err.message.includes("Network status")) {
+                    reason = "SCHOOL FILTER BLOCK: The district has blocked .wasm files.";
+                } else if (!window.crossOriginIsolated) {
+                    reason = "SECURITY BLOCK: Service Worker failed to initialize. Refresh (Ctrl+F5).";
+                }
+                alert("CRITICAL ERROR: " + reason);
         });
     }
 };
