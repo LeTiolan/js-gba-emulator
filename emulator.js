@@ -829,43 +829,58 @@ const CoreBridge = {
                 if (!response.ok) throw new Error("Engine script not found");
                 return response.text();
             })
-            .then(code => {
-          // FIX 1: Use a safety check for 'window' so workers don't crash
-             let safeCode = code.replace(/import\.meta\.url/g, "'https://letiolan.github.io/Quartz-GBA/core.js'");
+          .then(code => {
+                // 1. Progress: Engine Downloaded
+                const bar = document.getElementById('qz-bar');
+                const pct = document.getElementById('qz-pct');
+                const status = document.getElementById('qz-status');
                 
-                // FIX 2: Updated moduleSetup (Removed 'window.coreBlobUrl' reference to prevent worker crashes)
-               const moduleSetup = "var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return window.wasmBlobUrl; return 'https://letiolan.github.io/Quartz-GBA/' + p; } };\n";
-                
+                if (status) status.innerText = "CORE DECRYPTED. IGNITING...";
+                if (bar) bar.style.width = "90%";
+                if (pct) pct.innerText = "90%";
+
+                // 2. Clean the code for Chromebook/Worker compatibility
+                let safeCode = code.replace(/import\.meta\.url/g, "'https://letiolan.github.io/Quartz-GBA/core.js'");
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
 
-// 1. Merge the configuration and the engine code (ONLY ONCE)
-const finalEngineCode = moduleSetup + "\n" + safeCode;
-
-// 2. Create the memory blob
-// To this:
-const blob = new Blob([finalEngineCode], { type: 'text/javascript' });
-if (window.coreBlobUrl) URL.revokeObjectURL(window.coreBlobUrl); // Clean up old memory
-window.coreBlobUrl = URL.createObjectURL(blob);
+                // 3. Setup the WASM pointer
+                const moduleSetup = `var Module = { 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { if(p.endsWith('.wasm')) return "${window.wasmBlobUrl}"; return 'https://letiolan.github.io/Quartz-GBA/' + p; } };\n`;
                 
-this.waitForEngine(loader);
+                const finalEngineCode = moduleSetup + "\n" + safeCode;
 
-// 3. THIS IS THE SETTIMEOUT TO FIX
-setTimeout(() => {
-    const script = document.createElement('script');
-    script.type = 'text/javascript'; // Changed to bypass Chromebook module blocks
-    
-    // CRITICAL: Use finalEngineCode here so the engine sees your config!
-    script.textContent = finalEngineCode + "\nwindow.mGBA = mGBA; window.isCoreLoaded = true;";
-    
-    document.body.appendChild(script);
-}, 500);
+                // 4. Create the memory blob
+                if (window.coreBlobUrl) URL.revokeObjectURL(window.coreBlobUrl);
+                window.coreBlobUrl = URL.createObjectURL(new Blob([finalEngineCode], { type: 'text/javascript' }));
+                
+                // 5. Inject and Ignite
+                setTimeout(() => {
+                    const script = document.createElement('script');
+                    script.type = 'text/javascript';
+                    script.textContent = finalEngineCode + "\nwindow.mGBA = mGBA; window.isCoreLoaded = true;";
+                    document.body.appendChild(script);
+
+                    // Final UI Update
+                    if (bar) bar.style.width = "100%";
+                    if (pct) pct.innerText = "100%";
+                    if (status) status.innerText = "SYSTEM READY";
+
+                    // START THE ENGINE
+                    this.linkEngine(); 
+                }, 500);
+            })
+            .catch(err => {
+                console.error("Core loading failed:", err);
+                const statusEl = document.getElementById('qz-status');
+                if (statusEl) statusEl.innerText = "FATAL: " + err.message;
+            });
+    },
             })
           .catch(err => {
                 console.error("Core loading failed:", err);
                 
                 // Function to apply the 'Failure' look safely
-                const applyFaultUI = () => {
+               const applyFaultUI = () => {
                     const textEl = document.getElementById('qz-text');
                     const barEl = document.getElementById('qz-bar');
                     const statusEl = document.getElementById('qz-status');
@@ -878,12 +893,9 @@ setTimeout(() => {
                     }
                 };
 
-                // Try to apply it immediately
                 applyFaultUI();
-
-             // If the elements weren't ready, try again in 100ms
-            setTimeout(applyFaultUI, 100);
-        });
+                setTimeout(applyFaultUI, 100);
+            });
     }, // <--- YOU MUST ADD THIS BRACE AND COMMA
    
     // 7.2 - Stable UI Update Logic
