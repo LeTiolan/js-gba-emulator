@@ -874,19 +874,19 @@ const CoreBridge = {
             });
     },
    
-// 7.2 - Ignite the Engine (The Clean Way)
+// 7.2 - Ignite the Engine (GitHub Pages Optimized)
     linkEngine: function() {
-        console.log("[System] Checking Security Context...");
-        
-        // If this is false, the emulator WILL crash. 
-        if (!window.crossOriginIsolated) {
-            console.warn("[System] COI not active yet. Waiting for Service Worker reload...");
-        }
+        console.log("[System] Attempting to ignite mGBA WASM Core...");
+
+        // This detects if we are in a subfolder (like /Quartz-GBA/)
+        const pathArray = window.location.pathname.split('/');
+        pathArray.pop(); // Remove index.html
+        const baseFolder = pathArray.join('/');
 
         window.mGBA({
             canvas: document.getElementById('screen'),
             
-            // Simplified relative paths. The Service Worker intercepts these!
+            // Reference files relative to the current folder
             mainScriptUrlOrBlob: 'core.js', 
             locateFile: function(path) {
                 if (path.endsWith('.wasm')) return 'core.wasm';
@@ -904,8 +904,9 @@ const CoreBridge = {
 
         }).catch(function(err) {
             console.error("Critical Engine Failure:", err);
-            // This captures the [object Event] and turns it into text
-            alert("ENGINE LINK ERROR: The browser blocked the engine worker. Try refreshing once more.");
+            // If it's still an object, it's a browser security rejection
+            const msg = (typeof err === 'object') ? "Worker Blocked by Browser Security" : err;
+            alert("ENGINE LINK ERROR: " + msg);
         });
     }
 };
