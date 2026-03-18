@@ -832,8 +832,11 @@ const CoreBridge = {
                 safeCode = safeCode.replace(/export\s+default.*/g, '');
                 safeCode = safeCode.replace(/export\s+\{.*\};?/g, '');
 
-                const blob = new Blob([safeCode], { type: 'application/javascript' });
-                window.coreBlobUrl = URL.createObjectURL(blob);
+              // Add the Module configuration to the top of the engine code
+const finalEngineCode = moduleSetup + safeCode;
+
+const blob = new Blob([finalEngineCode], { type: 'application/javascript' });
+window.coreBlobUrl = URL.createObjectURL(blob);
                 
                 this.waitForEngine(loader);
 
