@@ -4,12 +4,16 @@
     <script src="coi-serviceworker.js"></script>
     
     <script>
-    // 2. DIAGNOSTIC ERROR CATCHER
+    // Improved error catcher to decode the "[object Event]"
     window.onerror = function(message, source, lineno, colno, error) {
-        if (typeof message === 'object') message = "Engine/Worker Blocked (Check COI Status)";
+        let displayMsg = message;
+        if (typeof message === 'object') {
+            displayMsg = "Security/Path Blocked. Try a 'Hard Refresh' (Ctrl+F5).";
+        }
+        
         const errorLog = document.createElement('div');
         errorLog.style.cssText = 'position:fixed; top:0; left:0; width:100vw; background:red; color:white; z-index:9999; padding:20px; font-weight:bold; font-family:monospace;';
-        errorLog.innerText = "SYSTEM CRASH: " + message;
+        errorLog.innerText = "SYSTEM CRASH: " + displayMsg;
         document.body.appendChild(errorLog);
     };
     </script>
