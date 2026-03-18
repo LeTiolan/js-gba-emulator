@@ -756,13 +756,7 @@ const CoreBridge = {
         `;
         document.head.appendChild(style);
 
-        loader.innerHTML = `
-            <div class="qz-title-container">
-                <div id="qz-text" class="qz-title">QUARTZ_OS</div>
-                <div class="qz-dots" id="qz-dots-container">
-                    <div class="qz-dot"></div><div class="qz-dot"></div><div class="qz-dot"></div>
-                </div>
-            </div>
+       loader.innerHTML = `
             <div class="qz-bar-wrapper"><div id="qz-bar" class="qz-bar"></div></div>
             <div class="qz-data-row">
                 <div id="qz-pct" class="qz-pct">0%</div>
@@ -774,8 +768,9 @@ const CoreBridge = {
             <div id="qz-action"></div>
         `;
         document.body.appendChild(loader);
+    }, // This closes the function before starting injectCore
 
-  // === START OF 7.1 ===
+    // === START OF 7.1 ===
     injectCore: function(loader) {
         fetch('core.js')
             .then(response => {
@@ -785,7 +780,7 @@ const CoreBridge = {
             .then(code => {
                 let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
                 
-                // The Worker Killer Fix
+                // THE WORKER KILLER: Stops the Line 1561 crash
                 const workerFix = "var Worker = undefined; var Module = { 'noWorkers': true, 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
                 safeCode = workerFix + safeCode;
                 
@@ -810,10 +805,8 @@ const CoreBridge = {
                 document.getElementById('qz-bar').style.background = "#ff3333";
                 document.getElementById('qz-status').innerText = "CORE MISSING";
                 document.getElementById('qz-status').style.color = "#ff3333";
-                document.getElementById('qz-dots-container').style.display = "none";
             });
-    }, 
-    // === END OF 7.1 (DO NOT DELETE THIS COMMA) ===
+    },
 
     // 7.2 - Stable UI Update Logic
     waitForEngine: function(loader) {
