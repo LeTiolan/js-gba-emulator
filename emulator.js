@@ -768,17 +768,14 @@ const CoreBridge = {
             <div id="qz-action"></div>
         `;
         document.body.appendChild(loader);
-    }, // This closes the function before starting injectCore
-
-    // === START OF 7.1 ===
-    injectCore: function(loader) {
+  
         fetch('core.js')
             .then(response => {
                 if (!response.ok) throw new Error("File not found");
                 return response.text();
             })
             .then(code => {
-                let safeCode = code.replace(/import\.meta\.url/g, 'window.location.href');
+               let safeCode = "var Worker = undefined; var Module = { 'noWorkers': true }; " + code.replace(/import\.meta\.url/g, 'window.location.href');
                 
                 // THE WORKER KILLER: Stops the Line 1561 crash
                 const workerFix = "var Worker = undefined; var Module = { 'noWorkers': true, 'noExitRuntime': true, 'arguments': [], 'locateFile': function(p) { return p; }, 'mainScriptUrlOrBlob': window.coreBlobUrl };\n";
